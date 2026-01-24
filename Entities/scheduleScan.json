@@ -1,0 +1,76 @@
+{
+  "name": "ScheduledScan",
+  "type": "object",
+  "properties": {
+    "userEmail": {
+      "type": "string",
+      "description": "Email of user who scheduled the scan"
+    },
+    "scanType": {
+      "type": "string",
+      "enum": [
+        "github_repository",
+        "website_infrastructure"
+      ],
+      "description": "Type of scan to perform"
+    },
+    "targetUrl": {
+      "type": "string",
+      "description": "URL to scan"
+    },
+    "frequency": {
+      "type": "string",
+      "enum": [
+        "once",
+        "daily",
+        "weekly",
+        "monthly"
+      ],
+      "default": "once",
+      "description": "Scan frequency"
+    },
+    "scheduledDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When to run the scan"
+    },
+    "lastRun": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last execution time"
+    },
+    "nextRun": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Next scheduled execution"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "completed",
+        "failed"
+      ],
+      "default": "active",
+      "description": "Schedule status"
+    },
+    "notifications": {
+      "type": "boolean",
+      "default": true,
+      "description": "Send notifications when scan completes"
+    }
+  },
+  "required": [
+    "userEmail",
+    "scanType",
+    "targetUrl",
+    "scheduledDate"
+  ],
+  "security": {
+    "create": "auth.role == 'user' || auth.role == 'admin'",
+    "read": "record.userEmail == auth.email || auth.role == 'admin'",
+    "update": "record.userEmail == auth.email || auth.role == 'admin'",
+    "delete": "record.userEmail == auth.email || auth.role == 'admin'"
+  }
+}

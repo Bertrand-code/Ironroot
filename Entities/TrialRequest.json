@@ -1,0 +1,91 @@
+{
+  "name": "TrialRequest",
+  "type": "object",
+  "properties": {
+    "fullName": {
+      "type": "string",
+      "description": "Full name of the person requesting trial"
+    },
+    "companyName": {
+      "type": "string",
+      "description": "Name of the company"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Work email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "interestedIn": {
+      "type": "string",
+      "enum": [
+        "defensive_security",
+        "offensive_security",
+        "code_scanning",
+        "grc_services",
+        "api_security",
+        "full_platform"
+      ],
+      "description": "Area of interest"
+    },
+    "companySize": {
+      "type": "string",
+      "enum": [
+        "1-50",
+        "51-200",
+        "201-1000",
+        "1000+"
+      ],
+      "description": "Company size"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "trial_active",
+        "converted",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Trial request status"
+    },
+    "message": {
+      "type": "string",
+      "description": "Additional information"
+    },
+    "trialStartDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the trial period started"
+    },
+    "trialEndDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the trial period ends (15 days from start)"
+    },
+    "approvedBy": {
+      "type": "string",
+      "description": "Admin who approved the trial"
+    },
+    "approvalDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the trial was approved"
+    }
+  },
+  "required": [
+    "fullName",
+    "email",
+    "interestedIn"
+  ],
+  "security": {
+    "create": "auth.role == 'user' || auth.role == 'admin'",
+    "read": "record.email == auth.email || auth.role == 'admin'",
+    "update": "auth.role == 'admin'",
+    "delete": "auth.role == 'admin'"
+  }
+}

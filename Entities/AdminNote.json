@@ -1,0 +1,48 @@
+{
+  "name": "AdminNote",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Note title"
+    },
+    "content": {
+      "type": "string",
+      "description": "Note content"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "idea",
+        "task",
+        "reminder",
+        "important",
+        "general"
+      ],
+      "default": "general",
+      "description": "Note category"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags for organizing notes"
+    },
+    "isPinned": {
+      "type": "boolean",
+      "default": false,
+      "description": "Pin important notes to top"
+    }
+  },
+  "required": [
+    "title",
+    "content"
+  ],
+  "security": {
+    "create": "auth.role == 'admin'",
+    "read": "auth.role == 'admin'",
+    "update": "auth.role == 'admin'",
+    "delete": "auth.role == 'admin'"
+  }
+}

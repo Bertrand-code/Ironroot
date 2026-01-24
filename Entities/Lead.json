@@ -1,0 +1,52 @@
+{
+  "name": "Lead",
+  "type": "object",
+  "properties": {
+    "fullName": {
+      "type": "string",
+      "description": "Full name of the contact person"
+    },
+    "companyName": {
+      "type": "string",
+      "description": "Name of the company"
+    },
+    "workEmail": {
+      "type": "string",
+      "format": "email",
+      "description": "Work email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "service": {
+      "type": "string",
+      "enum": [
+        "ai_security",
+        "code_scanning",
+        "api_security",
+        "grc_compliance",
+        "offensive_security",
+        "defensive_security",
+        "full_platform"
+      ],
+      "description": "Service of interest"
+    },
+    "message": {
+      "type": "string",
+      "description": "Details about their inquiry"
+    }
+  },
+  "required": [
+    "fullName",
+    "companyName",
+    "workEmail",
+    "service"
+  ],
+  "security": {
+    "create": "auth.role == 'user' || auth.role == 'admin'",
+    "read": "auth.role == 'admin'",
+    "update": "auth.role == 'admin'",
+    "delete": "auth.role == 'admin'"
+  }
+}

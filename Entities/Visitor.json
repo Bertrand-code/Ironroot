@@ -1,0 +1,40 @@
+{
+  "name": "Visitor",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Visitor email"
+    },
+    "fullName": {
+      "type": "string",
+      "description": "Visitor full name"
+    },
+    "source": {
+      "type": "string",
+      "description": "How they found us"
+    },
+    "pagesVisited": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of pages visited"
+    },
+    "lastVisit": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last visit timestamp"
+    }
+  },
+  "required": [
+    "email"
+  ],
+  "security": {
+    "create": "auth.role == 'user' || auth.role == 'admin'",
+    "read": "auth.role == 'admin'",
+    "update": "auth.role == 'admin'",
+    "delete": "auth.role == 'admin'"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "name": "APIAccessRequest",
+  "type": "object",
+  "properties": {
+    "fullName": {
+      "type": "string",
+      "description": "Full name of the requester"
+    },
+    "companyName": {
+      "type": "string",
+      "description": "Company name"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Contact email"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "useCase": {
+      "type": "string",
+      "description": "Intended use case for the API"
+    },
+    "expectedVolume": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "enterprise"
+      ],
+      "description": "Expected API call volume"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending",
+      "description": "Request status"
+    },
+    "apiKey": {
+      "type": "string",
+      "description": "Generated API key if approved"
+    },
+    "approvedBy": {
+      "type": "string",
+      "description": "Admin who approved the request"
+    },
+    "approvalDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the request was approved"
+    },
+    "requestDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the request was submitted"
+    }
+  },
+  "required": [
+    "fullName",
+    "email",
+    "useCase",
+    "expectedVolume"
+  ],
+  "security": {
+    "create": "auth.role == 'user' || auth.role == 'admin'",
+    "read": "record.email == auth.email || auth.role == 'admin'",
+    "update": "auth.role == 'admin'",
+    "delete": "auth.role == 'admin'"
+  }
+}

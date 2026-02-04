@@ -1,4 +1,3 @@
-export { default } from '../Components/platform';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Crosshair, BarChart3, Bug } from 'lucide-react';
@@ -35,23 +34,22 @@ const platforms = [
 
 export default function Platform() {
   return (
-    <section id="platform" className="py-20 md:py-32 bg-gray-900 border-t border-gray-800">
-      <div className="container mx-auto px-6">
+    <section id="platform" className="section">
+      <div className="container">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="section-header"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">The SecPro Platform</h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">
+          <h2 className="title-lg">The SecPro Platform</h2>
+          <p className="text-lead">
             Four integrated solutions working together to provide comprehensive security coverage for your organization.
           </p>
-          <div className="mt-6 w-24 h-1 bg-red-500 mx-auto"></div>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid grid-2">
           {platforms.map((platform, index) => (
             <motion.div
               key={index}
@@ -59,23 +57,23 @@ export default function Platform() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.3 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              className="bg-gray-800/50 p-8 rounded-lg border border-gray-700/50 hover:border-red-500/50 transition-all duration-300 cursor-pointer"
+              className="card card--glass"
               onClick={() => platform.link && (window.location.href = createPageUrl(platform.link.replace('/', '')))}
             >
-              <div className="flex items-start gap-4 mb-4">
-                <div className="bg-red-600/10 p-3 rounded-lg">
-                  <platform.icon className="h-8 w-8 text-red-500" />
+              <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+                <div className="badge">
+                  <platform.icon className="h-6 w-6" />
                 </div>
                 <div>
-                  <h3 className="text-2xl font-bold text-white mb-2">{platform.title}</h3>
-                  <p className="text-gray-400 mb-4">{platform.description}</p>
+                  <h3 className="card__title">{platform.title}</h3>
+                  <p className="card__meta">{platform.description}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-2" style={{ marginTop: '16px' }}>
                 {platform.features.map((feature, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                    <span className="text-sm text-gray-300">{feature}</span>
+                  <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <span className="dot" />
+                    <span className="card__meta">{feature}</span>
                   </div>
                 ))}
               </div>

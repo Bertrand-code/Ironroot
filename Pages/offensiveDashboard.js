@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target, AlertCircle, Zap, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import ReportGenerator from '../components/reports/ReportGenerator';
-import NotificationBell from '../components/notifications/NotificationBell';
+import ReportGenerator from '../components/Reports/ReportGenerator';
+import NotificationBell from '../components/Notifications/NotificationBell';
 
 export default function OffensiveDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -162,6 +162,28 @@ export default function OffensiveDashboard() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Offensive Toolchain Coverage</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4 text-sm text-gray-300">
+                {[
+                  { title: 'Recon & Asset Discovery', tools: 'ASM, DNS recon, passive intel' },
+                  { title: 'Web & API Testing', tools: 'Burp Suite, OWASP API checks' },
+                  { title: 'Exploit Validation', tools: 'Safe PoC validation, exploitability scoring' },
+                  { title: 'Cloud & IaC', tools: 'CSPM checks, IaC misconfig scans' },
+                  { title: 'Credential Hygiene', tools: 'Password audits, MFA enforcement' },
+                  { title: 'Social Engineering', tools: 'Phish simulations, awareness testing' },
+                ].map((item) => (
+                  <div key={item.title} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                    <p className="text-white font-semibold">{item.title}</p>
+                    <p className="text-xs text-gray-400">{item.tools}</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
               <CardTitle className="text-white">Active Engagements</CardTitle>

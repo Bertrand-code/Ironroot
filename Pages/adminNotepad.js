@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StickyNote, Plus, Trash2, Pin, Edit, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import moment from 'moment';
+const formatDateTime = (value) => {
+  if (!value) return 'Unknown';
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+};
 
 export default function AdminNotepad() {
   const [user, setUser] = useState(null);
@@ -28,7 +34,7 @@ export default function AdminNotepad() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await secpro.auth.me();
         if (currentUser.role !== 'admin') {
           window.location.href = '/';
         }
@@ -42,12 +48,12 @@ export default function AdminNotepad() {
 
   const { data: notes = [] } = useQuery({
     queryKey: ['adminNotes'],
-    queryFn: () => base44.entities.AdminNote.list('-created_date'),
+    queryFn: () => secpro.entities.AdminNote.list('-created_date'),
     enabled: !!user,
   });
 
   const createNoteMutation = useMutation({
-    mutationFn: (data) => base44.entities.AdminNote.create(data),
+    mutationFn: (data) => secpro.entities.AdminNote.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminNotes'] });
       resetForm();
@@ -55,7 +61,7 @@ export default function AdminNotepad() {
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.AdminNote.update(id, data),
+    mutationFn: ({ id, data }) => secpro.entities.AdminNote.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminNotes'] });
       resetForm();
@@ -63,7 +69,7 @@ export default function AdminNotepad() {
   });
 
   const deleteNoteMutation = useMutation({
-    mutationFn: (id) => base44.entities.AdminNote.delete(id),
+    mutationFn: (id) => secpro.entities.AdminNote.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminNotes'] });
     },
@@ -258,7 +264,7 @@ export default function AdminNotepad() {
                       </div>
                       <h3 className="font-bold text-white">{note.title}</h3>
                       <p className="text-xs text-gray-500 mt-1">
-                        {moment(note.created_date).format('MMM D, YYYY h:mm A')}
+                        {formatDateTime(note.created_date)}
                       </p>
                     </div>
                     <div className="flex gap-2">

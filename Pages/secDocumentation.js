@@ -76,7 +76,7 @@ export default function SecurityDocumentation() {
 useEffect(() => {
   const checkAuth = async () => {
     try {
-      const currentUser = await base44.auth.me();
+      const currentUser = await secpro.auth.me();
       if (currentUser.role !== 'admin') {
         window.location.href = '/'; // Redirect non-admins
       }
@@ -139,7 +139,7 @@ useEffect(() => {
                 </p>
                 <pre className="bg-gray-900 p-3 rounded text-sm text-gray-300 overflow-x-auto">
 {`// Check user access before scanning
-const trials = await base44.entities.TrialRequest.filter({ 
+const trials = await secpro.entities.TrialRequest.filter({ 
   email: user.email,
   status: 'trial_active'
 });

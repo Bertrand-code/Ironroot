@@ -1,1 +1,8 @@
-{}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/threatIntelligence": "pages/threatIntelligence.js",
+  "/reportCenter": "pages/reportCenter.js",
+  "/codeScanner": "pages/codeScanner.js"
+}

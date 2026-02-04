@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +42,7 @@ export default function AISecurityAssistant() {
     setLoading(true);
 
     try {
-      const response = await base44.integrations.Core.InvokeLLM({
+      const response = await secpro.integrations.Core.InvokeLLM({
         prompt: `You are a world-class cybersecurity expert and AI assistant specializing in application security, penetration testing, and secure coding practices. You have deep knowledge of:
 
 - OWASP Top 10, CWE, CVE databases

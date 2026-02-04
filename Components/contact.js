@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Send, CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -41,7 +40,7 @@ export default function Contact() {
     }
 
     try {
-      await base44.entities.Lead.create(formData);
+      await secpro.entities.Lead.create(formData);
       setStatus('success');
       setFormData({
         fullName: '',
@@ -59,27 +58,26 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="py-20 md:py-32 bg-gray-900 border-t border-gray-800">
-      <div className="container mx-auto px-6">
+    <section id="contact" className="section">
+      <div className="container" style={{ maxWidth: '1000px' }}>
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="section-header"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">Get in Touch</h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">Ready to secure your enterprise? Contact our team for a personalized consultation and demo.</p>
-          <div className="mt-6 w-24 h-1 bg-red-500 mx-auto"></div>
+          <h2 className="title-lg">Get in Touch</h2>
+          <p className="text-lead">Ready to secure your enterprise? Contact our team for a personalized consultation and demo.</p>
         </motion.div>
         
-        <div className="max-w-3xl mx-auto">
+        <div>
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.8 }}
-            className="bg-gray-800/50 p-8 rounded-lg border border-gray-700/50"
+            className="card card--glass"
           >
             {status === 'success' ? (
                 <Alert variant="default" className="bg-green-500/10 border-green-500/30 text-green-300">
@@ -99,20 +97,23 @@ export default function Contact() {
                 <Input name="phone" placeholder="Phone Number" value={formData.phone} onChange={handleChange} className="bg-gray-900 border-gray-700 text-white focus:border-red-500" />
               </div>
               <div>
-                <Select onValueChange={handleSelectChange} value={formData.service}>
-                  <SelectTrigger className="w-full bg-gray-900 border-gray-700 text-white focus:border-red-500">
-                    <SelectValue placeholder="Service of Interest *" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                    <SelectItem value="ai_security">AI Security</SelectItem>
-                    <SelectItem value="code_scanning">Code Scanning</SelectItem>
-                    <SelectItem value="api_security">API Security</SelectItem>
-                    <SelectItem value="grc_compliance">GRC & Compliance</SelectItem>
-                    <SelectItem value="offensive_security">Offensive Security</SelectItem>
-                    <SelectItem value="defensive_security">Defensive Security</SelectItem>
-                    <SelectItem value="full_platform">Full Platform</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  className="select"
+                  value={formData.service}
+                  onChange={(e) => handleSelectChange(e.target.value)}
+                  required
+                >
+                  <option value="" disabled>
+                    Service of Interest *
+                  </option>
+                  <option value="ai_security">AI Security</option>
+                  <option value="code_scanning">Code Scanning</option>
+                  <option value="api_security">API Security</option>
+                  <option value="grc_compliance">GRC & Compliance</option>
+                  <option value="offensive_security">Offensive Security</option>
+                  <option value="defensive_security">Defensive Security</option>
+                  <option value="full_platform">Full Platform</option>
+                </select>
               </div>
               <div>
                 <Textarea name="message" placeholder="How can we help you?" value={formData.message} onChange={handleChange} className="bg-gray-900 border-gray-700 text-white focus:border-red-500 h-32" />

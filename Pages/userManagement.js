@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,7 +19,7 @@ export default function UserManagement() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await secpro.auth.me();
         if (currentUser.role !== 'admin') {
           window.location.href = '/';
         }
@@ -33,14 +33,14 @@ export default function UserManagement() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list('-created_date'),
+    queryFn: () => secpro.entities.User.list('-created_date'),
     enabled: !!user,
   });
 
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, role }) => {
-      await base44.users.inviteUser(email, role);
-      await base44.entities.ActivityLog.create({
+      await secpro.users.inviteUser(email, role);
+      await secpro.entities.ActivityLog.create({
         userEmail: user.email,
         action: 'user_invited',
         details: { invitedEmail: email, role },
@@ -56,7 +56,7 @@ export default function UserManagement() {
 
   const updateUserRoleMutation = useMutation({
     mutationFn: ({ userId, newRole }) => 
-      base44.entities.User.update(userId, { role: newRole }),
+      secpro.entities.User.update(userId, { role: newRole }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },

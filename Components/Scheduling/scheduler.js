@@ -1,12 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, Trash2 } from 'lucide-react';
-import moment from 'moment';
+const formatDateTime = (value) => {
+  if (!value) return 'Not scheduled';
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+};
 
 export default function ScanScheduler() {
   const [user, setUser] = useState(null);
@@ -22,7 +28,7 @@ export default function ScanScheduler() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await secpro.auth.me();
         setUser(currentUser);
       } catch (err) {
         console.error('Failed to get user:', err);
@@ -33,12 +39,12 @@ export default function ScanScheduler() {
 
   const { data: scheduledScans = [] } = useQuery({
     queryKey: ['scheduledScans', user?.email],
-    queryFn: () => base44.entities.ScheduledScan.filter({ userEmail: user.email }, '-created_date'),
+    queryFn: () => secpro.entities.ScheduledScan.filter({ userEmail: user.email }, '-created_date'),
     enabled: !!user,
   });
 
   const createScanMutation = useMutation({
-    mutationFn: (data) => base44.entities.ScheduledScan.create(data),
+    mutationFn: (data) => secpro.entities.ScheduledScan.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduledScans'] });
       setFormData({
@@ -52,7 +58,7 @@ export default function ScanScheduler() {
   });
 
   const deleteScanMutation = useMutation({
-    mutationFn: (id) => base44.entities.ScheduledScan.delete(id),
+    mutationFn: (id) => secpro.entities.ScheduledScan.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduledScans'] });
     },
@@ -174,7 +180,7 @@ export default function ScanScheduler() {
                     </div>
                     <div className="flex items-center gap-2 mt-2 text-xs text-gray-500">
                       <Clock className="h-3 w-3" />
-                      Next run: {moment(scan.nextRun).format('MMM D, YYYY h:mm A')}
+                      Next run: {formatDateTime(scan.nextRun)}
                     </div>
                   </div>
                   <Button

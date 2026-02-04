@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { GraduationCap, Award, CheckCircle, Lock, Play, BookOpen, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { createPageUrl } from '@/utils';
 
 export default function SecurityTraining() {
@@ -17,7 +17,7 @@ export default function SecurityTraining() {
   React.useEffect(() => {
     const getUser = async () => {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await secpro.auth.me();
         setUser(currentUser);
       } catch (err) {
         console.error('Failed to get user:', err);
@@ -174,7 +174,7 @@ export default function SecurityTraining() {
                         </Badge>
                       ))}
                     </div>
-                    <Link to={createPageUrl('CourseLab') + '?id=' + course.id}>
+                    <Link href={createPageUrl('CourseLab') + '?id=' + course.id}>
                       <Button className="w-full bg-red-600 hover:bg-red-700">
                         <Play className="h-4 w-4 mr-2" />
                         Start Course

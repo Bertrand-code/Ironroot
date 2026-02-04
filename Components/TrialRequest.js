@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { CheckCircle, Loader2 } from 'lucide-react';
 
 export default function TrialRequest() {
@@ -38,7 +38,7 @@ export default function TrialRequest() {
     setStatus('loading');
 
     try {
-      await base44.entities.TrialRequest.create(formData);
+      await secpro.entities.TrialRequest.create(formData);
       setStatus('success');
       setFormData({
         fullName: '',
@@ -55,16 +55,16 @@ export default function TrialRequest() {
   };
 
   return (
-    <section id="trial" className="py-20 md:py-32 bg-gray-900 border-t border-gray-800">
-      <div className="container mx-auto px-6 max-w-4xl">
+    <section id="trial" className="section">
+      <div className="container" style={{ maxWidth: '960px' }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-12"
+          className="section-header"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Start Your Free Trial</h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+          <h2 className="title-lg">Start Your Free Trial</h2>
+          <p className="text-lead">
             Experience the full power of SecPro. No credit card required. Get instant access to all platform features.
           </p>
         </motion.div>
@@ -73,7 +73,7 @@ export default function TrialRequest() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-gray-800/50 p-8 rounded-xl border border-gray-700"
+          className="card card--glass"
         >
           {status === 'success' ? (
             <div className="text-center py-12">

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, AlertTriangle, Activity, Clock, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
-import ReportGenerator from '../components/reports/ReportGenerator';
-import NotificationBell from '../components/notifications/NotificationBell';
+import ReportGenerator from '../components/Reports/ReportGenerator';
+import NotificationBell from '../components/Notifications/NotificationBell';
 
 export default function DefensiveDashboard() {
   const [timeRange, setTimeRange] = useState('24h');

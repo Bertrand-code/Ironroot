@@ -11,43 +11,42 @@ export default function APIDocumentation() {
   ];
 
   return (
-    <section id="api" className="py-20 md:py-32 bg-gray-900 border-t border-gray-800">
-      <div className="container mx-auto px-6">
+    <section id="api" className="section">
+      <div className="container">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="section-header"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">API & Integrations</h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+          <h2 className="title-lg">API & Integrations</h2>
+          <p className="text-lead">
             Integrate SecPro into your existing security stack. Our comprehensive API allows you to automate scans, retrieve results, and manage security operations programmatically.
           </p>
-          <div className="mt-6 w-24 h-1 bg-red-500 mx-auto"></div>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-2" style={{ alignItems: 'center' }}>
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
           >
-            <div className="grid grid-cols-2 gap-4 mb-8">
+            <div className="grid grid-2" style={{ marginBottom: '20px' }}>
               {apiFeatures.map((feature, index) => (
-                <div key={index} className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
-                  <feature.icon className="h-8 w-8 text-red-500 mb-3" />
-                  <h4 className="font-bold text-white mb-1">{feature.title}</h4>
-                  <p className="text-xs text-gray-400">{feature.description}</p>
+                <div key={index} className="card card--glass">
+                  <feature.icon className="brand__logo" />
+                  <h4 className="card__title" style={{ marginTop: '10px' }}>{feature.title}</h4>
+                  <p className="card__meta">{feature.description}</p>
                 </div>
               ))}
             </div>
             
-            <div className="bg-gray-800/50 p-6 rounded-lg border border-gray-700">
-              <h4 className="font-bold text-white mb-4">Popular Integrations</h4>
-              <div className="grid grid-cols-3 gap-4">
+            <div className="card card--glass">
+              <h4 className="card__title">Popular Integrations</h4>
+              <div className="grid grid-3" style={{ marginTop: '12px' }}>
                 {['Jira', 'Slack', 'GitHub', 'Jenkins', 'Splunk', 'PagerDuty'].map(tool => (
-                  <div key={tool} className="bg-gray-900 p-3 rounded text-center">
-                    <span className="text-sm text-gray-300">{tool}</span>
+                  <div key={tool} className="card card--glass" style={{ padding: '12px', textAlign: 'center' }}>
+                    <span className="card__meta">{tool}</span>
                   </div>
                 ))}
               </div>
@@ -58,15 +57,12 @@ export default function APIDocumentation() {
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="bg-gray-950 p-6 rounded-lg border border-gray-800 font-mono text-sm"
+            className="card card--glass"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-              <div className="w-3 h-3 rounded-full bg-green-500"></div>
-              <span className="ml-auto text-xs text-gray-500">API Example</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
+              <span className="badge">API Example</span>
             </div>
-            <pre className="text-gray-300 overflow-x-auto">
+            <pre className="card__meta" style={{ fontFamily: 'IBM Plex Mono, monospace', overflowX: 'auto' }}>
               <code>{`curl -X POST https://api.secpro.com/v1/scan \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
@@ -91,15 +87,15 @@ export default function APIDocumentation() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-12 text-center"
+          className="section-header"
         >
           <a
             href="#trial"
-            className="inline-block bg-red-600 text-white px-8 py-3 rounded-md font-semibold hover:bg-red-700 transition-colors"
+            className="btn btn--primary"
           >
             Get API Access with Free Trial
           </a>
-          <p className="mt-4 text-sm text-gray-500">Full API documentation available after signup</p>
+          <p className="card__meta" style={{ marginTop: '12px' }}>Full API documentation available after signup</p>
         </motion.div>
       </div>
     </section>

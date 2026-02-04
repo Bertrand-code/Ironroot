@@ -27,22 +27,21 @@ const grcServices = [
 
 export default function GRC() {
   return (
-    <section id="grc" className="py-20 md:py-32 bg-gray-800/30 border-t border-gray-800">
-      <div className="container mx-auto px-6">
+    <section id="grc" className="section">
+      <div className="container">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.5 }}
-          className="text-center mb-16"
+          className="section-header"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">GRC & Compliance Services</h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">
+          <h2 className="title-lg">GRC & Compliance Services</h2>
+          <p className="text-lead">
             Bridge the gap between technical security findings and business decisions. We quantify risks, ensure compliance, and deliver insights that matter to leadership.
           </p>
-          <div className="mt-6 w-24 h-1 bg-red-500 mx-auto"></div>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
+        <div className="grid grid-4" style={{ marginBottom: '40px' }}>
           {grcServices.map((service, index) => (
             <motion.div
               key={index}
@@ -50,13 +49,11 @@ export default function GRC() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="bg-gray-900/50 p-6 rounded-lg border border-gray-700 hover:border-red-500/50 transition-all"
+              className="card card--glass"
             >
-              <div className="bg-red-600/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <service.icon className="h-6 w-6 text-red-500" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{service.title}</h3>
-              <p className="text-gray-400 text-sm">{service.description}</p>
+              <service.icon className="brand__logo" />
+              <h3 className="card__title" style={{ marginTop: '12px' }}>{service.title}</h3>
+              <p className="card__meta">{service.description}</p>
             </motion.div>
           ))}
         </div>
@@ -65,27 +62,27 @@ export default function GRC() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-gradient-to-r from-red-900/20 to-gray-900/50 p-8 md:p-12 rounded-lg border border-red-900/30"
+          className="card card--glass"
         >
-          <div className="max-w-3xl mx-auto text-center">
-            <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">
+          <div className="section-header" style={{ marginBottom: '0' }}>
+            <h3 className="title-lg">
               Security Findings, Quantified for the Boardroom
             </h3>
-            <p className="text-gray-300 mb-6">
+            <p className="text-lead">
               Transform technical vulnerabilities into financial risk metrics. Our reports show potential business impact, compliance gaps, and ROI on security investments—in language that board members understand and act on.
             </p>
-            <div className="grid md:grid-cols-3 gap-6 mt-8">
+            <div className="grid grid-3" style={{ marginTop: '24px' }}>
               <div className="text-center">
-                <div className="text-3xl font-bold text-red-500 mb-2">$XXM</div>
-                <p className="text-sm text-gray-400">Potential Risk Exposure</p>
+                <div className="stat__value">$8.4M</div>
+                <p className="card__meta">Potential Risk Exposure</p>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-red-500 mb-2">XX%</div>
-                <p className="text-sm text-gray-400">Compliance Coverage</p>
+                <div className="stat__value">94%</div>
+                <p className="card__meta">Compliance Coverage</p>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-red-500 mb-2">XX Days</div>
-                <p className="text-sm text-gray-400">Average Remediation Time</p>
+                <div className="stat__value">21 Days</div>
+                <p className="card__meta">Average Remediation Time</p>
               </div>
             </div>
           </div>

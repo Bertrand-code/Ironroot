@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await base44.auth.me();
+        const currentUser = await secpro.auth.me();
         if (currentUser.role !== 'admin') {
           window.location.href = '/';
         }
@@ -27,25 +27,25 @@ export default function AdminDashboard() {
 
   const { data: trialRequests = [], refetch } = useQuery({
     queryKey: ['trialRequests'],
-    queryFn: () => base44.entities.TrialRequest.list('-created_date'),
+    queryFn: () => secpro.entities.TrialRequest.list('-created_date'),
     enabled: !!user,
   });
 
   const { data: leads = [] } = useQuery({
     queryKey: ['leads'],
-    queryFn: () => base44.entities.Lead.list('-created_date'),
+    queryFn: () => secpro.entities.Lead.list('-created_date'),
     enabled: !!user,
   });
 
   const { data: visitors = [] } = useQuery({
     queryKey: ['visitors'],
-    queryFn: () => base44.entities.Visitor.list('-lastVisit'),
+    queryFn: () => secpro.entities.Visitor.list('-lastVisit'),
     enabled: !!user,
   });
 
   const { data: scanHistory = [] } = useQuery({
     queryKey: ['scanHistory'],
-    queryFn: () => base44.entities.ScanHistory.list('-created_date'),
+    queryFn: () => secpro.entities.ScanHistory.list('-created_date'),
     enabled: !!user,
   });
 
@@ -65,10 +65,10 @@ export default function AdminDashboard() {
       updateData.approvalDate = now.toISOString();
     }
     
-    await base44.entities.TrialRequest.update(id, updateData);
+    await secpro.entities.TrialRequest.update(id, updateData);
     
     // Log the action
-    await base44.entities.ActivityLog.create({
+    await secpro.entities.ActivityLog.create({
       userEmail: user.email,
       action: 'trial_approved',
       details: {
@@ -83,8 +83,8 @@ export default function AdminDashboard() {
     // If approved, invite the user and send welcome email
     if (status === 'trial_active' || status === 'approved') {
       try {
-        await base44.users.inviteUser(request.email, 'user');
-        await base44.integrations.Core.SendEmail({
+        await secpro.users.inviteUser(request.email, 'user');
+        await secpro.integrations.Core.SendEmail({
           from_name: 'SecPro Security Platform',
           to: request.email,
           subject: 'Welcome to SecPro - Your Trial Access is Approved!',
@@ -152,16 +152,16 @@ contact@secpro.com`
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
           <div className="flex gap-3">
-            <Button variant="outline" onClick={() => window.location.href = '/UserManagement'}>
+            <Button variant="outline" onClick={() => window.location.href = '/userManagement'}>
               User Management
             </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/AdminNotepad'}>
+            <Button variant="outline" onClick={() => window.location.href = '/adminNotepad'}>
               Notepad
             </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/SecurityDocumentation'}>
+            <Button variant="outline" onClick={() => window.location.href = '/secDocumentation'}>
               Security Docs
             </Button>
-            <Button variant="outline" onClick={() => base44.auth.logout()}>
+            <Button variant="outline" onClick={() => secpro.auth.logout()}>
               Logout
             </Button>
           </div>

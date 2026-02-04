@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { secpro } from '@/lib/secproClient';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { Shield, AlertTriangle, TrendingUp, Activity, Target, Download, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
-import ReportGenerator from '../components/reports/ReportGenerator';
+import ReportGenerator from '../components/Reports/ReportGenerator';
 
 export default function ReportCenter() {
   const [timeRange, setTimeRange] = useState('30d');
@@ -15,7 +15,7 @@ export default function ReportCenter() {
 
   const { data: scanHistory = [] } = useQuery({
     queryKey: ['scanHistory'],
-    queryFn: () => base44.entities.ScanHistory.list('-created_date', 200),
+    queryFn: () => secpro.entities.ScanHistory.list('-created_date', 200),
   });
 
   // Filter by scan type

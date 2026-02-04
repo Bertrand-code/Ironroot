@@ -1,4 +1,3 @@
-export { default } from '../Components/services';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Target, Users, Building, BrainCircuit } from 'lucide-react';
@@ -44,21 +43,20 @@ const cardVariants = {
 
 export default function Services() {
   return (
-    <section id="services" className="py-20 md:py-32 bg-gray-900 border-t border-gray-800">
-      <div className="container mx-auto px-6">
+    <section id="services" className="section">
+      <div className="container">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, amount: 0.5 }}
           transition={{ duration: 0.5 }}
-          className="text-center mb-16"
+          className="section-header"
         >
-          <h2 className="text-3xl md:text-4xl font-bold text-white">Core Security Services</h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">Comprehensive security solutions powered by AI and delivered by expert security professionals.</p>
-           <div className="mt-6 w-24 h-1 bg-red-500 mx-auto"></div>
+          <h2 className="title-lg">Core Security Services</h2>
+          <p className="text-lead">Comprehensive security solutions powered by AI and delivered by expert security professionals.</p>
         </motion.div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-4">
           {serviceItems.map((item, index) => (
             <motion.div
               key={index}
@@ -66,13 +64,11 @@ export default function Services() {
               initial="offscreen"
               whileInView="onscreen"
               viewport={{ once: true, amount: 0.5 }}
-              className="bg-gray-800/50 p-8 rounded-lg border border-gray-700/50 hover:border-red-500/50 transition-all duration-300 group"
+              className="card card--glass"
             >
-              <div className="mb-6">
-                <item.icon className="h-10 w-10 text-red-500" />
-              </div>
-              <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-              <p className="text-gray-400 leading-relaxed">{item.description}</p>
+              <item.icon className="brand__logo" />
+              <h3 className="card__title" style={{ marginTop: '12px' }}>{item.title}</h3>
+              <p className="card__meta">{item.description}</p>
             </motion.div>
           ))}
         </div>

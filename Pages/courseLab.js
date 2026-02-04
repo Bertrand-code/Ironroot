@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useRouter } from 'next/router';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle, XCircle, ArrowLeft, Lightbulb, Code, Play } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { createPageUrl } from '@/utils';
 import { motion } from 'framer-motion';
 
 export default function CourseLab() {
-  const location = useLocation();
-  const courseId = new URLSearchParams(location.search).get('id');
+  const { query } = useRouter();
+  const courseId = query?.id;
   
   const [currentStep, setCurrentStep] = useState(0);
   const [userCode, setUserCode] = useState('');
@@ -160,7 +160,7 @@ async function saveUser(username, password) {
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6 max-w-6xl">
         <div className="mb-6">
-          <Link to={createPageUrl('SecurityTraining')}>
+          <Link href={createPageUrl('SecurityTraining')}>
             <Button variant="ghost" className="text-gray-400 hover:text-white">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Courses
@@ -287,7 +287,7 @@ async function saveUser(username, password) {
                   <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
                   <h3 className="text-2xl font-bold text-white mb-2">Course Completed! 🎉</h3>
                   <p className="text-gray-300 mb-4">You've mastered {course.title}</p>
-                  <Link to={createPageUrl('SecurityTraining')}>
+                  <Link href={createPageUrl('SecurityTraining')}>
                     <Button className="bg-red-600 hover:bg-red-700">
                       Back to Training Academy
                     </Button>

@@ -143,21 +143,47 @@ export default function AdminNotepad() {
   return (
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6">
-        <div className="flex justify-between items-center mb-8">
+        <div className="admin-hero" style={{ marginBottom: '28px' }}>
           <div>
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-              <StickyNote className="h-8 w-8 text-red-500" />
-              Admin Notepad
-            </h1>
-            <p className="text-gray-400 mt-2">Quick notes and ideas for admin tasks</p>
+            <span className="eyebrow">Operator Notes</span>
+            <h1 className="title-lg">Admin Notepad</h1>
+            <p className="text-lead">Capture security ideas, escalation notes, and operational TODOs.</p>
+            <div className="admin-hero__actions">
+              <Button variant="outline" onClick={() => (window.location.href = '/adminDashboard')}>Admin Dashboard</Button>
+              <Button variant="outline" onClick={() => (window.location.href = '/userManagement')}>User Management</Button>
+            </div>
           </div>
-          <Button
-            onClick={() => setIsCreating(!isCreating)}
-            className="bg-red-600 hover:bg-red-700"
-          >
-            {isCreating ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
-            {isCreating ? 'Cancel' : 'New Note'}
-          </Button>
+          <div className="admin-hero__stats">
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Notes</div>
+              <div className="admin-kpi__value">{notes.length}</div>
+              <div className="card__meta">Active workspace entries</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Pinned</div>
+              <div className="admin-kpi__value">{notes.filter((note) => note.isPinned).length}</div>
+              <div className="card__meta">High-priority items</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Draft Mode</div>
+              <div className="admin-kpi__value">{isCreating ? 'On' : 'Off'}</div>
+              <div className="card__meta">Create or edit notes</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Quick Action</div>
+              <div className="admin-kpi__value">
+                <Button
+                  onClick={() => setIsCreating(!isCreating)}
+                  className="bg-red-600 hover:bg-red-700"
+                  style={{ width: '100%' }}
+                >
+                  {isCreating ? <X className="mr-2 h-4 w-4" /> : <Plus className="mr-2 h-4 w-4" />}
+                  {isCreating ? 'Cancel' : 'New Note'}
+                </Button>
+              </div>
+              <div className="card__meta">Create a new note</div>
+            </div>
+          </div>
         </div>
 
         <AnimatePresence>

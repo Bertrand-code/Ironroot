@@ -221,12 +221,38 @@ export default function UserManagement() {
   return (
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <Users className="h-8 w-8 text-red-500" />
-            User Management
-          </h1>
-          <p className="text-gray-400 mt-2">Manage users, roles, and permissions</p>
+        <div className="admin-hero" style={{ marginBottom: '28px' }}>
+          <div>
+            <span className="eyebrow">Identity & Access</span>
+            <h1 className="title-lg">User Management</h1>
+            <p className="text-lead">Control roles, group access, and org assignments from one panel.</p>
+            <div className="admin-hero__actions">
+              <Button variant="outline" onClick={() => (window.location.href = '/adminDashboard')}>Admin Dashboard</Button>
+              <Button variant="outline" onClick={() => (window.location.href = '/controlCenter')}>Owner Control</Button>
+            </div>
+          </div>
+          <div className="admin-hero__stats">
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Owner Mode</div>
+              <div className="admin-kpi__value">{canManageAdmins ? 'Enabled' : 'Restricted'}</div>
+              <div className="card__meta">Admin approvals {canManageAdmins ? 'available' : 'locked'}</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Users</div>
+              <div className="admin-kpi__value">{users.length}</div>
+              <div className="card__meta">Active identities</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Admins</div>
+              <div className="admin-kpi__value">{users.filter((u) => ['admin', 'owner'].includes(u.role)).length}</div>
+              <div className="card__meta">Privileged staff</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Groups</div>
+              <div className="admin-kpi__value">{groups.length}</div>
+              <div className="card__meta">Access tiers</div>
+            </div>
+          </div>
         </div>
 
         {/* Stats */}

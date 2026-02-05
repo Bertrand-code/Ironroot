@@ -51,7 +51,12 @@ export default function Header() {
           ))}
         </nav>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {org && isAuthed && <span className="card__meta">{org.name}</span>}
+          {org && isAuthed && (
+            <>
+              <span className="card__meta">{org.name}</span>
+              {isOwner && <span className="badge">Owner</span>}
+            </>
+          )}
           {isAuthed ? (
             <button className="btn btn--ghost" onClick={() => ironroot.auth.logout()}>
               Log out

@@ -4,13 +4,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserCheck, Clock, Shield, Building, Layers, Activity } from 'lucide-react';
+import { Users, UserCheck, Clock, Shield, Building, Layers, Activity, Database, AlertTriangle } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [org, setOrg] = useState(null);
   const queryClient = useQueryClient();
+  const isOwner = user?.role === 'owner';
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -83,6 +84,18 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
 
+  const { data: assets = [] } = useQuery({
+    queryKey: ['assets'],
+    queryFn: () => ironroot.entities.Asset.list('-lastSeen'),
+    enabled: !!user,
+  });
+
+  const { data: risks = [] } = useQuery({
+    queryKey: ['risks'],
+    queryFn: () => ironroot.entities.Risk.list('-created_date'),
+    enabled: !!user,
+  });
+
   const { data: activityLog = [] } = useQuery({
     queryKey: ['activityLog'],
     queryFn: () => ironroot.entities.ActivityLog.list('-timestamp', 12),
@@ -105,6 +118,10 @@ export default function AdminDashboard() {
     acc[userItem.orgId] = (acc[userItem.orgId] || 0) + 1;
     return acc;
   }, {});
+
+  const criticalRisks = risks.filter((risk) => risk.severity === 'critical').length;
+  const openRisks = risks.filter((risk) => risk.status === 'open').length;
+  const publicAssets = assets.filter((asset) => asset.exposure === 'public').length;
 
   const timeAgo = (value) => {
     if (!value) return 'just now';
@@ -242,24 +259,65 @@ contact@ironroot.com`
   return (
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6">
-        <div className="flex justify-between items-center mb-8">
+        <div className="admin-hero" style={{ marginBottom: '28px' }}>
           <div>
-            <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
-            {org && <p className="text-xs text-gray-500 mt-1">Organization: {org.name}</p>}
+            <span className="eyebrow">Operations Command</span>
+            <h1 className="title-lg">Admin Command Center</h1>
+            <p className="text-lead">
+              Orchestrate trials, manage users, and track security performance in real time.
+            </p>
+            {org && (
+              <div className="admin-pill" style={{ marginTop: '12px' }}>
+                Organization: {org.name} · Plan: {org.plan || 'paid'}
+              </div>
+            )}
+            <div className="admin-hero__actions">
+              <Button variant="outline" onClick={() => window.location.href = '/userManagement'}>
+                User Management
+              </Button>
+              <Button variant="outline" onClick={() => window.location.href = '/assetInventory'}>
+                Asset Inventory
+              </Button>
+              <Button variant="outline" onClick={() => window.location.href = '/riskRegister'}>
+                Risk Register
+              </Button>
+              {isOwner && (
+                <Button variant="outline" onClick={() => window.location.href = '/controlCenter'}>
+                  Owner Control
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => window.location.href = '/adminNotepad'}>
+                Notepad
+              </Button>
+              <Button variant="outline" onClick={() => window.location.href = '/secDocumentation'}>
+                Security Docs
+              </Button>
+              <Button variant="outline" onClick={() => ironroot.auth.logout()}>
+                Logout
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={() => window.location.href = '/userManagement'}>
-              User Management
-            </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/adminNotepad'}>
-              Notepad
-            </Button>
-            <Button variant="outline" onClick={() => window.location.href = '/secDocumentation'}>
-              Security Docs
-            </Button>
-            <Button variant="outline" onClick={() => ironroot.auth.logout()}>
-              Logout
-            </Button>
+          <div className="admin-hero__stats">
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Active Sessions</div>
+              <div className="admin-kpi__value">{activeSessions.length}</div>
+              <div className="card__meta">Users online now</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Public Assets</div>
+              <div className="admin-kpi__value">{publicAssets}</div>
+              <div className="card__meta">Exposed services tracked</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Critical Risks</div>
+              <div className="admin-kpi__value">{criticalRisks}</div>
+              <div className="card__meta">Require executive response</div>
+            </div>
+            <div className="admin-kpi">
+              <div className="admin-kpi__label">Open Risks</div>
+              <div className="admin-kpi__value">{openRisks}</div>
+              <div className="card__meta">Mitigation in progress</div>
+            </div>
           </div>
         </div>
 
@@ -307,6 +365,28 @@ contact@ironroot.com`
             <CardContent>
               <div className="text-2xl font-bold text-white">{scanHistory.length}</div>
               <p className="text-xs text-gray-500 mt-1">Security scans performed</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Assets</CardTitle>
+              <Database className="h-4 w-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{assets.length}</div>
+              <p className="text-xs text-gray-500 mt-1">{publicAssets} public exposures</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Open Risks</CardTitle>
+              <AlertTriangle className="h-4 w-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{openRisks}</div>
+              <p className="text-xs text-gray-500 mt-1">{criticalRisks} critical</p>
             </CardContent>
           </Card>
 

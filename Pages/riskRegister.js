@@ -90,9 +90,39 @@ export default function RiskRegister() {
           plans={['paid']}
           feature="riskRegister"
         >
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Risk Register</h1>
-            <p className="text-gray-400">Track business risk, mitigation status, and ownership across the org.</p>
+          <div className="admin-hero" style={{ marginBottom: '28px' }}>
+            <div>
+              <span className="eyebrow">Governance</span>
+              <h1 className="title-lg">Risk Register</h1>
+              <p className="text-lead">Track business risk, mitigation status, and ownership across the org.</p>
+              <div className="admin-hero__actions">
+                <Button variant="outline" onClick={() => (window.location.href = '/assetInventory')}>Asset Inventory</Button>
+                <Button variant="outline" onClick={() => (window.location.href = '/reportCenter')}>Report Center</Button>
+                <Button variant="outline" onClick={() => (window.location.href = '/adminDashboard')}>Admin Dashboard</Button>
+              </div>
+            </div>
+            <div className="admin-hero__stats">
+              <div className="admin-kpi">
+                <div className="admin-kpi__label">Total Risks</div>
+                <div className="admin-kpi__value">{risks.length}</div>
+                <div className="card__meta">Tracked items</div>
+              </div>
+              <div className="admin-kpi">
+                <div className="admin-kpi__label">Critical</div>
+                <div className="admin-kpi__value">{risks.filter((r) => r.severity === 'critical').length}</div>
+                <div className="card__meta">Executive priority</div>
+              </div>
+              <div className="admin-kpi">
+                <div className="admin-kpi__label">Open</div>
+                <div className="admin-kpi__value">{risks.filter((r) => r.status === 'open').length}</div>
+                <div className="card__meta">Needs mitigation</div>
+              </div>
+              <div className="admin-kpi">
+                <div className="admin-kpi__label">Mitigating</div>
+                <div className="admin-kpi__value">{risks.filter((r) => r.status === 'mitigating').length}</div>
+                <div className="card__meta">In progress</div>
+              </div>
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6 mb-8">

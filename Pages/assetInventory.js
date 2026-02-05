@@ -106,25 +106,31 @@ export default function AssetInventory() {
           plans={['paid']}
           feature="attackSurfaceMonitoring"
         >
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Asset Inventory</h1>
-            <p className="text-gray-400">Unified visibility across domains, APIs, repos, and cloud infrastructure.</p>
-          </div>
-
-          <div className="grid md:grid-cols-4 gap-4 mb-8">
-            {[
-              { label: 'Total Assets', value: stats.total },
-              { label: 'Critical Assets', value: stats.critical },
-              { label: 'Public Exposure', value: stats.publicExposure },
-              { label: 'Production Assets', value: stats.prod },
-            ].map((item) => (
-              <Card key={item.label} className="bg-gray-800 border-gray-700">
-                <CardContent className="py-6">
-                  <p className="text-sm text-gray-400">{item.label}</p>
-                  <p className="text-2xl font-bold text-white">{item.value}</p>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="admin-hero" style={{ marginBottom: '28px' }}>
+            <div>
+              <span className="eyebrow">Attack Surface</span>
+              <h1 className="title-lg">Asset Inventory</h1>
+              <p className="text-lead">Unified visibility across domains, APIs, repos, and cloud infrastructure.</p>
+              <div className="admin-hero__actions">
+                <Button variant="outline" onClick={() => (window.location.href = '/riskRegister')}>Risk Register</Button>
+                <Button variant="outline" onClick={() => (window.location.href = '/threatIntelligence')}>Threat Intel</Button>
+                <Button variant="outline" onClick={() => (window.location.href = '/adminDashboard')}>Admin Dashboard</Button>
+              </div>
+            </div>
+            <div className="admin-hero__stats">
+              {[
+                { label: 'Total Assets', value: stats.total, meta: 'Tracked items' },
+                { label: 'Critical Assets', value: stats.critical, meta: 'High impact' },
+                { label: 'Public Exposure', value: stats.publicExposure, meta: 'Internet facing' },
+                { label: 'Production Assets', value: stats.prod, meta: 'Live systems' },
+              ].map((item) => (
+                <div key={item.label} className="admin-kpi">
+                  <div className="admin-kpi__label">{item.label}</div>
+                  <div className="admin-kpi__value">{item.value}</div>
+                  <div className="card__meta">{item.meta}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6 mb-8">

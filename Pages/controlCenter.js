@@ -87,6 +87,10 @@ export default function ControlCenter() {
   });
 
   const adminUsers = useMemo(() => users.filter((item) => ['admin', 'owner'].includes(item.role)), [users]);
+  const pendingAdminRequests = useMemo(
+    () => adminRequests.filter((request) => request.status === 'pending').length,
+    [adminRequests]
+  );
 
   const toggleFeature = async (key) => {
     if (!orgState) return;
@@ -162,9 +166,45 @@ export default function ControlCenter() {
           description="Only the platform owner can manage global access, feature flags, and security policies."
           ownerOnly
         >
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Owner Control Center</h1>
-            <p className="text-gray-400">Centralize access, policies, and enterprise feature controls.</p>
+          <div className="admin-hero" style={{ marginBottom: '28px' }}>
+            <div>
+              <span className="eyebrow">Owner Control</span>
+              <h1 className="title-lg">Owner Control Center</h1>
+              <p className="text-lead">
+                Govern access, feature flags, and security policies across every tenant from a single console.
+              </p>
+              <div className="admin-pill" style={{ marginTop: '12px' }}>
+                Owner: {ownerEmail || orgState?.ownerEmail || user?.email}
+              </div>
+              <div className="admin-hero__actions">
+                <Button variant="outline" onClick={() => (window.location.href = '/adminDashboard')}>Admin Dashboard</Button>
+                <Button variant="outline" onClick={() => (window.location.href = '/userManagement')}>User Management</Button>
+                <Button variant="outline" onClick={() => (window.location.href = '/assetInventory')}>Asset Inventory</Button>
+                <Button variant="outline" onClick={() => (window.location.href = '/riskRegister')}>Risk Register</Button>
+              </div>
+            </div>
+            <div className="admin-hero__stats">
+              <div className="admin-kpi">
+                <div className="admin-kpi__label">Organizations</div>
+                <div className="admin-kpi__value">{orgs.length}</div>
+                <div className="card__meta">Active company accounts</div>
+              </div>
+              <div className="admin-kpi">
+                <div className="admin-kpi__label">Admins</div>
+                <div className="admin-kpi__value">{adminUsers.length}</div>
+                <div className="card__meta">Privileged operators</div>
+              </div>
+              <div className="admin-kpi">
+                <div className="admin-kpi__label">Pending Requests</div>
+                <div className="admin-kpi__value">{pendingAdminRequests}</div>
+                <div className="card__meta">Awaiting approval</div>
+              </div>
+              <div className="admin-kpi">
+                <div className="admin-kpi__label">Total Users</div>
+                <div className="admin-kpi__value">{users.length}</div>
+                <div className="card__meta">Across all orgs</div>
+              </div>
+            </div>
           </div>
 
           <div className="grid lg:grid-cols-3 gap-6 mb-8">

@@ -18,7 +18,11 @@ export default function OffensiveDashboard() {
   const [pentestLoading, setPentestLoading] = useState(false);
 
   useEffect(() => {
-    setIntegrationStatus(ironroot.integrations.External.status());
+    const loadStatus = async () => {
+      const status = await ironroot.integrations.External.status();
+      setIntegrationStatus(status);
+    };
+    loadStatus();
   }, []);
 
   const runPentest = async () => {
@@ -335,7 +339,7 @@ export default function OffensiveDashboard() {
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       item.enabled ? 'bg-green-500/10 text-green-400' : 'bg-gray-700 text-gray-400'
                     }`}>
-                      {item.enabled ? 'Connected' : 'Not Configured'}
+                      {item.enabled ? (item.mode === 'demo' ? 'Demo' : 'Connected') : 'Not Configured'}
                     </span>
                   </div>
                 ))}

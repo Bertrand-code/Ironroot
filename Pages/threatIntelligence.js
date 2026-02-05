@@ -8,6 +8,7 @@ import { Search, Radar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthGate from '@/components/AuthGate';
 import { ironroot } from '@/lib/ironrootClient';
+import { INTEGRATIONS } from '@/lib/integrationsRegistry';
 
 const intelLibrary = [
   {
@@ -202,10 +203,78 @@ export default function ThreatIntelligence() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState(intelLibrary[0].id);
   const [dataSources, setDataSources] = useState([]);
+  const [liveCve, setLiveCve] = useState(null);
+  const [liveCveError, setLiveCveError] = useState('');
+  const [liveCveLoading, setLiveCveLoading] = useState(false);
+  const envTemplate = `IRONROOT_DEMO_INTEGRATIONS=true
+SHODAN_API_KEY=
+CENSYS_ID=
+CENSYS_SECRET=
+SECURITYTRAILS_API_KEY=
+BINARYEDGE_API_KEY=
+VT_API_KEY=
+OTX_API_KEY=
+ABUSEIPDB_API_KEY=
+NVD_API_KEY=
+EXPLOITDB_API_KEY=
+GITHUB_TOKEN=
+SEMGREP_TOKEN=
+SNYK_TOKEN=`;
+
+  const integrationKeys = useMemo(() => {
+    return INTEGRATIONS.map((integration) => {
+      const auth = integration.auth || {};
+      const keys = [];
+      if (auth.type === 'basic') {
+        if (auth.envId) keys.push(auth.envId);
+        if (auth.envSecret) keys.push(auth.envSecret);
+      } else if (auth.env) {
+        keys.push(auth.env);
+      }
+      return { id: integration.id, label: integration.label, keys };
+    });
+  }, []);
 
   useEffect(() => {
-    setDataSources(ironroot.integrations.External.status());
+    const load = async () => {
+      const sources = await ironroot.integrations.External.status();
+      setDataSources(sources);
+    };
+    load();
   }, []);
+
+  useEffect(() => {
+    const fetchCve = async () => {
+      const query = searchQuery.trim().toUpperCase();
+      const nvdReady = dataSources.find((s) => s.id === 'nvd' && s.enabled);
+      if (!query.startsWith('CVE-') || !nvdReady) {
+        setLiveCve(null);
+        setLiveCveError('');
+        return;
+      }
+      setLiveCveLoading(true);
+      setLiveCveError('');
+      try {
+        const response = await ironroot.integrations.External.query({
+          provider: 'nvd',
+          path: '/rest/json/cves/2.0',
+          params: { cveId: query },
+        });
+        if (!response.ok) {
+          setLiveCveError('Unable to fetch live CVE data.');
+          setLiveCve(null);
+        } else {
+          setLiveCve(response.data);
+        }
+      } catch (err) {
+        setLiveCveError('Unable to fetch live CVE data.');
+        setLiveCve(null);
+      } finally {
+        setLiveCveLoading(false);
+      }
+    };
+    fetchCve();
+  }, [searchQuery, dataSources]);
 
   const filteredIntel = useMemo(() => {
     if (!searchQuery.trim()) return intelLibrary;
@@ -217,6 +286,15 @@ export default function ThreatIntelligence() {
         .includes(query)
     );
   }, [searchQuery]);
+
+  const liveRecord = liveCve?.vulnerabilities?.[0]?.cve;
+  const liveDescription = liveRecord?.descriptions?.find((item) => item.lang === 'en')?.value;
+  const liveMetrics =
+    liveRecord?.metrics?.cvssMetricV31?.[0] ||
+    liveRecord?.metrics?.cvssMetricV30?.[0] ||
+    liveRecord?.metrics?.cvssMetricV2?.[0];
+  const liveScore = liveMetrics?.cvssData?.baseScore;
+  const liveSeverity = liveMetrics?.cvssData?.baseSeverity;
 
   const cveResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -273,11 +351,39 @@ export default function ThreatIntelligence() {
                       <div className="card__meta">{source.category}</div>
                     </div>
                     <span className="badge" style={{ background: source.enabled ? 'rgba(72, 240, 192, 0.16)' : undefined }}>
-                      {source.enabled ? 'Connected' : 'Not Configured'}
+                      {source.enabled ? (source.mode === 'demo' ? 'Demo' : 'Connected') : 'Not Configured'}
                     </span>
                   </div>
                 </div>
               ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="card card--glass" style={{ marginBottom: '24px' }}>
+          <CardHeader>
+            <CardTitle>Integration Setup</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="card__meta">
+              Add API keys to `.env.local` and restart the dev server to connect live feeds. Use demo mode if you want
+              to preview the experience without keys.
+            </p>
+            <div className="grid grid-2" style={{ gap: '12px', marginTop: '16px' }}>
+              {integrationKeys.map((integration) => (
+                <div key={integration.id} className="card card--glass" style={{ padding: '12px' }}>
+                  <div className="card__title">{integration.label}</div>
+                  <div className="card__meta">
+                    {integration.keys.length ? integration.keys.join(', ') : 'No key required'}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="card card--glass" style={{ padding: '12px', marginTop: '16px' }}>
+              <div className="card__meta">Example `.env.local` template</div>
+              <pre style={{ marginTop: '8px', whiteSpace: 'pre-wrap', fontFamily: 'monospace', fontSize: '12px' }}>
+                {envTemplate}
+              </pre>
             </div>
           </CardContent>
         </Card>
@@ -300,50 +406,82 @@ export default function ThreatIntelligence() {
         </Card>
 
         {searchQuery.trim() && (
-          <div className="grid grid-2" style={{ marginBottom: '24px' }}>
+          <div style={{ marginBottom: '24px' }}>
+            <div className="grid grid-2" style={{ marginBottom: '24px' }}>
+              <Card className="card card--glass">
+                <CardHeader>
+                  <CardTitle>CVE Lookup</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {cveResults.length ? (
+                    <div className="grid" style={{ gap: '12px' }}>
+                      {cveResults.map((cve) => (
+                        <div key={cve.id} className="card card--glass" style={{ padding: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <strong>{cve.id}</strong>
+                            <span className="badge">CVSS {cve.cvss}</span>
+                          </div>
+                          <p className="card__meta" style={{ marginTop: '6px' }}>{cve.title}</p>
+                          <p className="card__meta">{cve.description}</p>
+                          <div className="badge" style={{ marginTop: '8px' }}>{cve.owasp}</div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="card__meta">No CVE matches found.</div>
+                  )}
+                </CardContent>
+              </Card>
+              <Card className="card card--glass">
+                <CardHeader>
+                  <CardTitle>OWASP Top 10</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {owaspResults.length ? (
+                    <div className="grid" style={{ gap: '10px' }}>
+                      {owaspResults.map((item) => (
+                        <div key={item.id} className="card card--glass" style={{ padding: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <strong>{item.id}</strong>
+                            <span className="badge">{item.name}</span>
+                          </div>
+                          <p className="card__meta" style={{ marginTop: '6px' }}>{item.summary}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="card__meta">No OWASP matches found.</div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
             <Card className="card card--glass">
               <CardHeader>
-                <CardTitle>CVE Lookup</CardTitle>
+                <CardTitle>Live NVD Snapshot</CardTitle>
               </CardHeader>
               <CardContent>
-                {cveResults.length ? (
-                  <div className="grid" style={{ gap: '12px' }}>
-                    {cveResults.map((cve) => (
-                      <div key={cve.id} className="card card--glass" style={{ padding: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <strong>{cve.id}</strong>
-                          <span className="badge">CVSS {cve.cvss}</span>
-                        </div>
-                        <p className="card__meta" style={{ marginTop: '6px' }}>{cve.title}</p>
-                        <p className="card__meta">{cve.description}</p>
-                        <div className="badge" style={{ marginTop: '8px' }}>{cve.owasp}</div>
-                      </div>
-                    ))}
+                {liveCveLoading && <div className="card__meta">Fetching live CVE intelligence...</div>}
+                {!liveCveLoading && liveCveError && <div className="card__meta">{liveCveError}</div>}
+                {!liveCveLoading && !liveCveError && liveRecord && (
+                  <div className="card card--glass" style={{ padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong>{liveRecord.id}</strong>
+                      {liveScore ? (
+                        <span className="badge">{liveSeverity || 'CVSS'} {liveScore}</span>
+                      ) : (
+                        <span className="badge">CVSS Pending</span>
+                      )}
+                    </div>
+                    <p className="card__meta" style={{ marginTop: '6px' }}>{liveDescription || 'No description provided.'}</p>
+                    <div className="card__meta" style={{ marginTop: '8px' }}>
+                      Published: {liveRecord.published || 'N/A'} · Updated: {liveRecord.lastModified || 'N/A'}
+                    </div>
                   </div>
-                ) : (
-                  <div className="card__meta">No CVE matches found.</div>
                 )}
-              </CardContent>
-            </Card>
-            <Card className="card card--glass">
-              <CardHeader>
-                <CardTitle>OWASP Top 10</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {owaspResults.length ? (
-                  <div className="grid" style={{ gap: '10px' }}>
-                    {owaspResults.map((item) => (
-                      <div key={item.id} className="card card--glass" style={{ padding: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <strong>{item.id}</strong>
-                          <span className="badge">{item.name}</span>
-                        </div>
-                        <p className="card__meta" style={{ marginTop: '6px' }}>{item.summary}</p>
-                      </div>
-                    ))}
+                {!liveCveLoading && !liveCveError && !liveRecord && (
+                  <div className="card__meta">
+                    Enter a CVE ID to fetch live data. Enable the NVD API key to unlock live CVE intelligence.
                   </div>
-                ) : (
-                  <div className="card__meta">No OWASP matches found.</div>
                 )}
               </CardContent>
             </Card>

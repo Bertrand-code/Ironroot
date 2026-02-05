@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Target, AlertCircle, Zap, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReportGenerator from '../components/Reports/ReportGenerator';
 import NotificationBell from '../components/Notifications/NotificationBell';
+import AuthGate from '@/components/AuthGate';
+import { ironroot } from '@/lib/ironrootClient';
 
 export default function OffensiveDashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
   const [expandedFinding, setExpandedFinding] = useState(null);
   const [expandedEngagement, setExpandedEngagement] = useState(null);
+  const [integrationStatus, setIntegrationStatus] = useState([]);
+
+  useEffect(() => {
+    setIntegrationStatus(ironroot.integrations.External.status());
+  }, []);
 
   const engagements = [
     { 
@@ -161,6 +167,11 @@ export default function OffensiveDashboard() {
           ))}
         </div>
 
+        <AuthGate
+          title="Sign in to access offensive operations"
+          description="Red-team programs, AI pentest execution, and detailed findings are available after login."
+          plans={['paid']}
+        >
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
@@ -182,6 +193,59 @@ export default function OffensiveDashboard() {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">AI Pentest Program</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-300">
+                Continuous AI-driven pentest cycles simulate attacker behavior, validate exploitability, and map blast radius across cloud, API, and application tiers.
+              </p>
+              <div className="grid grid-cols-2 gap-3 text-xs text-gray-400 mt-4">
+                <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                  Attack Paths: 12 active
+                </div>
+                <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                  Exploitability Score: 8.6
+                </div>
+                <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                  Auto Playbooks: 6 ready
+                </div>
+                <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                  Red-Team Coverage: 91%
+                </div>
+              </div>
+              <div className="mt-4 text-xs text-gray-500">
+                Powered by adversary emulation, chained exploit validation, and continuous retest orchestration.
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">AI Pentest Signal Feeds</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 text-sm text-gray-300">
+                {integrationStatus.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                    <div>
+                      <p className="text-white font-medium">{item.label}</p>
+                      <p className="text-xs text-gray-500">{item.category}</p>
+                    </div>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      item.enabled ? 'bg-green-500/10 text-green-400' : 'bg-gray-700 text-gray-400'
+                    }`}>
+                      {item.enabled ? 'Connected' : 'Not Configured'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-4">
+                Connect external APIs for automated enrichment, exploit matching, and attack surface context.
+              </p>
             </CardContent>
           </Card>
           <Card className="bg-gray-800 border-gray-700">
@@ -359,6 +423,7 @@ export default function OffensiveDashboard() {
             </div>
           </CardContent>
         </Card>
+        </AuthGate>
       </div>
     </div>
   );

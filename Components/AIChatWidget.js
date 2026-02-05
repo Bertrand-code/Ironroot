@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircle, X, Send, Loader2, Bot, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 
-const SYSTEM_CONTEXT = `You are SecBot, the AI security consultant for SecPro, an enterprise security platform based in Seattle, WA.
+const SYSTEM_CONTEXT = `You are Ironroot Sentinel, the AI security consultant for Ironroot, an enterprise security platform based in Seattle, WA.
 
 Your role is to:
 1. Explain platform capabilities clearly (Code Scanning, Threat Intelligence, GRC, Offensive & Defensive Security)
@@ -13,7 +13,7 @@ Your role is to:
 3. Provide safe, defensive security advice (no exploit instructions)
 4. Recommend next best actions and point users to the free trial or contact form
 
-Key information about SecPro:
+Key information about Ironroot:
 - Location: 622 Rainier Ave S, Seattle, WA 98144
 - Platform Modules:
   - Code Scanning: SAST, SCA, secrets detection, IaC + cloud misconfig checks, and prioritized remediation
@@ -29,7 +29,7 @@ Tone: professional, confident, and practical. Keep replies concise (2-3 sentence
 export default function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Hello! I'm SecBot, your security platform assistant. How can I help you today? Ask me about our AI security scanning, GRC services, offensive/defensive security, or start a free trial." }
+    { role: 'assistant', content: "Hello! I'm Ironroot Sentinel, your security platform assistant. How can I help you today? Ask me about our AI security scanning, GRC services, offensive/defensive security, or start a free trial." }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,10 +47,10 @@ export default function AIChatWidget() {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
     setIsLoading(true);
 
-    const conversationHistory = messages.map(m => `${m.role === 'user' ? 'User' : 'SecBot'}: ${m.content}`).join('\n');
+    const conversationHistory = messages.map(m => `${m.role === 'user' ? 'User' : 'Ironroot Sentinel'}: ${m.content}`).join('\n');
     
-    const response = await secpro.integrations.Core.InvokeLLM({
-      prompt: `${SYSTEM_CONTEXT}\n\nConversation so far:\n${conversationHistory}\n\nUser: ${userMessage}\n\nSecBot:`,
+    const response = await ironroot.integrations.Core.InvokeLLM({
+      prompt: `${SYSTEM_CONTEXT}\n\nConversation so far:\n${conversationHistory}\n\nUser: ${userMessage}\n\nIronroot Sentinel:`,
     });
 
     setMessages(prev => [...prev, { role: 'assistant', content: response }]);
@@ -98,7 +98,7 @@ export default function AIChatWidget() {
                   <Bot className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold">SecBot</h3>
+                  <h3 className="text-white font-semibold">Ironroot Sentinel</h3>
                   <p className="text-xs text-gray-400">Security Platform Assistant</p>
                 </div>
               </div>

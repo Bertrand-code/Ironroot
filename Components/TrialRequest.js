@@ -3,8 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { CheckCircle, Loader2 } from 'lucide-react';
 
 export default function TrialRequest() {
@@ -38,7 +37,7 @@ export default function TrialRequest() {
     setStatus('loading');
 
     try {
-      await secpro.entities.TrialRequest.create(formData);
+      await ironroot.entities.TrialRequest.create(formData);
       setStatus('success');
       setFormData({
         fullName: '',
@@ -65,7 +64,7 @@ export default function TrialRequest() {
         >
           <h2 className="title-lg">Start Your Free Trial</h2>
           <p className="text-lead">
-            Experience the full power of SecPro. No credit card required. Get instant access to all platform features.
+            Experience the full power of Ironroot. No credit card required. Get instant access to all platform features.
           </p>
         </motion.div>
 
@@ -146,35 +145,40 @@ export default function TrialRequest() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Interested In *
                   </label>
-                  <Select onValueChange={(value) => handleSelectChange('interestedIn', value)} required>
-                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
-                      <SelectValue placeholder="Select area" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="defensive_security">Defensive Security</SelectItem>
-                      <SelectItem value="offensive_security">Offensive Security</SelectItem>
-                      <SelectItem value="code_scanning">Code Scanning</SelectItem>
-                      <SelectItem value="grc_services">GRC Services</SelectItem>
-                      <SelectItem value="api_security">API Security</SelectItem>
-                      <SelectItem value="full_platform">Full Platform</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <select
+                    className="select"
+                    value={formData.interestedIn}
+                    onChange={(e) => handleSelectChange('interestedIn', e.target.value)}
+                    required
+                  >
+                    <option value="" disabled>
+                      Select area
+                    </option>
+                    <option value="defensive_security">Defensive Security</option>
+                    <option value="offensive_security">Offensive Security</option>
+                    <option value="code_scanning">Code Scanning</option>
+                    <option value="grc_services">GRC Services</option>
+                    <option value="api_security">API Security</option>
+                    <option value="full_platform">Full Platform</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Company Size
                   </label>
-                  <Select onValueChange={(value) => handleSelectChange('companySize', value)}>
-                    <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
-                      <SelectValue placeholder="Select size" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1-50">1-50 employees</SelectItem>
-                      <SelectItem value="51-200">51-200 employees</SelectItem>
-                      <SelectItem value="201-1000">201-1000 employees</SelectItem>
-                      <SelectItem value="1000+">1000+ employees</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <select
+                    className="select"
+                    value={formData.companySize}
+                    onChange={(e) => handleSelectChange('companySize', e.target.value)}
+                  >
+                    <option value="" disabled>
+                      Select size
+                    </option>
+                    <option value="1-50">1-50 employees</option>
+                    <option value="51-200">51-200 employees</option>
+                    <option value="201-1000">201-1000 employees</option>
+                    <option value="1000+">1000+ employees</option>
+                  </select>
                 </div>
               </div>
 

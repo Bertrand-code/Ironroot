@@ -21,7 +21,7 @@ export default function APIDocumentation() {
         >
           <h2 className="title-lg">API & Integrations</h2>
           <p className="text-lead">
-            Integrate SecPro into your existing security stack. Our comprehensive API allows you to automate scans, retrieve results, and manage security operations programmatically.
+            Integrate Ironroot into your existing security stack. Our comprehensive API allows you to automate scans, retrieve results, and manage security operations programmatically.
           </p>
         </motion.div>
 
@@ -63,7 +63,7 @@ export default function APIDocumentation() {
               <span className="badge">API Example</span>
             </div>
             <pre className="card__meta" style={{ fontFamily: 'IBM Plex Mono, monospace', overflowX: 'auto' }}>
-              <code>{`curl -X POST https://api.secpro.com/v1/scan \\
+              <code>{`curl -X POST https://api.ironroot.com/v1/scan \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{

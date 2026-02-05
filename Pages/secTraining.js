@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,7 @@ export default function SecurityTraining() {
   React.useEffect(() => {
     const getUser = async () => {
       try {
-        const currentUser = await secpro.auth.me();
+        const currentUser = await ironroot.auth.me();
         setUser(currentUser);
       } catch (err) {
         console.error('Failed to get user:', err);

@@ -41,7 +41,7 @@ const caseStudies = [
     logoName: "Innovatech",
     title: "Protecting High-Value Intellectual Property",
     challenge: "A deep-tech R&D firm was worried about corporate espionage and the theft of valuable IP related to a breakthrough patent.",
-    action: "SecPro conducted a 3-month long Advanced Persistent Threat (APT) emulation, mimicking the tactics of a state-sponsored adversary.",
+    action: "Ironroot conducted a 3-month long Advanced Persistent Threat (APT) emulation, mimicking the tactics of a state-sponsored adversary.",
     result: "Our covert operations highlighted gaps in their detection and response capabilities. They enhanced their security monitoring, securing their IP and a major new patent.",
     icon: TrendingUp,
   }

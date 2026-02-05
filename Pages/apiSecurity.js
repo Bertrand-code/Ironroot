@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ export default function APISecurity() {
   const handleScan = async () => {
     setScanning(true);
     try {
-      const analysis = await secpro.integrations.Core.InvokeLLM({
+      const analysis = await ironroot.integrations.Core.InvokeLLM({
         prompt: `You are an ELITE API security expert with deep knowledge of OWASP API Security Top 10 2023. Perform a COMPREHENSIVE security audit of the API endpoint: ${apiUrl}
 
 🔍 **ADVANCED API SECURITY TESTING**:
@@ -128,8 +128,8 @@ For EACH vulnerability provide:
       setResults(analysis);
       
       // Save to history
-      const user = await secpro.auth.me();
-      await secpro.entities.ScanHistory.create({
+      const user = await ironroot.auth.me();
+      await ironroot.entities.ScanHistory.create({
         scanType: 'api_security',
         targetName: apiUrl,
         summary: analysis.summary || { critical: 0, high: 0, medium: 0, low: 0, total: 0 },

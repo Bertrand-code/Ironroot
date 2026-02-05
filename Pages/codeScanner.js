@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, GitBranch, AlertTriangle, CheckCircle, Clock, Loader2, FileCode, Shield, ChevronDown, ChevronUp, ExternalLink, Globe, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import ScanScheduler from '../components/Scheduling/Scheduler';
 import NotificationBell from '../components/Notifications/NotificationBell';
+import { useAuth } from '@/lib/useAuth';
+import AuthGate from '@/components/AuthGate';
 
 export default function CodeScanner() {
   const [file, setFile] = useState(null);
@@ -20,6 +22,7 @@ export default function CodeScanner() {
   const [expandedVulns, setExpandedVulns] = useState({});
   const [hasAccess, setHasAccess] = useState(false);
   const [accessStatus, setAccessStatus] = useState({ type: '', message: '' });
+  const { user } = useAuth();
 
   const simulateScan = ({ target, mode }) => {
     const findings = [
@@ -27,10 +30,12 @@ export default function CodeScanner() {
         severity: 'critical',
         title: 'Hardcoded Production Secrets Detected',
         category: 'Secrets Exposure',
+        ruleId: 'SG-SEC-001',
+        filePath: mode === 'github_repository' ? 'components/Payments/APIClient.js' : 'services/payment.js',
         cwe_id: 'CWE-798',
         owasp_category: 'A02:2021 - Cryptographic Failures',
         lineNumber: 42,
-        affectedCode: 'const API_KEY = \"sk_live_********\";',
+        affectedCode: 'const API_KEY = "sk_live_********";',
         description:
           'Sensitive credentials are embedded directly in source code. This creates immediate compromise risk if the repository is exposed or a developer device is breached.',
         attackScenario:
@@ -38,13 +43,15 @@ export default function CodeScanner() {
         remediation:
           'Move secrets to environment variables or a secrets manager. Rotate keys immediately and add automated secret scanning to CI.',
         secureCodeExample:
-          'const API_KEY = process.env.SERVICE_API_KEY;\nif (!API_KEY) throw new Error(\"Missing key\");',
+          'const API_KEY = process.env.SERVICE_API_KEY;\\nif (!API_KEY) throw new Error("Missing key");',
         references: ['OWASP Secrets Management', 'CWE-798'],
       },
       {
         severity: 'high',
         title: 'SQL Injection Risk in User Lookup',
         category: 'SAST',
+        ruleId: 'SG-SAST-011',
+        filePath: mode === 'github_repository' ? 'pages/api/users.js' : 'api/users.js',
         cwe_id: 'CWE-89',
         owasp_category: 'A03:2021 - Injection',
         lineNumber: 128,
@@ -54,13 +61,15 @@ export default function CodeScanner() {
         remediation:
           'Use parameterized queries or an ORM with safe bindings. Validate user input server-side.',
         secureCodeExample:
-          'const query = \"SELECT * FROM users WHERE id = ?\";\ndb.query(query, [userId]);',
+          'const query = "SELECT * FROM users WHERE id = ?";\\ndb.query(query, [userId]);',
         references: ['OWASP SQL Injection', 'CWE-89'],
       },
       {
         severity: 'medium',
         title: 'Dependency Vulnerability: Outdated Auth Library',
         category: 'SCA',
+        ruleId: 'SG-SCA-203',
+        filePath: 'package-lock.json',
         cwe_id: 'CWE-1104',
         component: 'auth-lib',
         currentVersion: '2.1.3',
@@ -75,6 +84,8 @@ export default function CodeScanner() {
         severity: 'medium',
         title: 'Missing Rate Limiting on Login Endpoint',
         category: 'API Security',
+        ruleId: 'SG-API-102',
+        filePath: mode === 'github_repository' ? 'pages/api/auth/login.js' : 'api/auth/login.js',
         cwe_id: 'CWE-799',
         owasp_category: 'A07:2021 - Identification and Authentication Failures',
         description:
@@ -87,6 +98,8 @@ export default function CodeScanner() {
         severity: 'low',
         title: 'Security Headers Missing',
         category: 'Misconfiguration',
+        ruleId: 'SG-CONFIG-044',
+        filePath: 'next.config.js',
         cwe_id: 'CWE-693',
         description:
           'Key browser protections are not enabled, which can increase XSS and clickjacking risk.',
@@ -94,7 +107,7 @@ export default function CodeScanner() {
           'Enable `Content-Security-Policy`, `X-Frame-Options`, and `Referrer-Policy` headers.',
         references: ['OWASP Security Headers'],
       },
-    ];
+    ];;
 
     const summary = findings.reduce(
       (acc, finding) => {
@@ -105,13 +118,67 @@ export default function CodeScanner() {
       { critical: 0, high: 0, medium: 0, low: 0, total: 0 }
     );
 
+    const repoSummary = mode === 'github_repository'
+      ? {
+          name: target?.split('/').slice(-2).join('/') || 'repository',
+          overview:
+            'Repo inventory flagged risk concentration in auth, payments, and API layers. Critical secrets exposure and injection vectors require immediate remediation.',
+          pages: [
+            { path: 'pages/index.js', findings: 1 },
+            { path: 'pages/checkout.js', findings: 1 },
+            { path: 'pages/account/settings.js', findings: 1 },
+          ],
+          apiRoutes: [
+            { path: 'pages/api/auth/login.js', findings: 1 },
+            { path: 'pages/api/payments/charge.js', findings: 1 },
+          ],
+          files: [
+            { path: 'pages/index.js', type: 'page', findings: 1 },
+            { path: 'pages/api/auth/login.js', type: 'api', findings: 1 },
+            { path: 'components/Payments/APIClient.js', type: 'component', findings: 1 },
+            { path: 'components/Checkout/CheckoutForm.js', type: 'component', findings: 1 },
+            { path: 'lib/security/session.js', type: 'lib', findings: 1 },
+          ],
+          components: [
+            { name: 'Authentication', critical: 1, high: 0, medium: 1, low: 0 },
+            { name: 'Payments', critical: 1, high: 0, medium: 0, low: 0 },
+            { name: 'Checkout UI', critical: 0, high: 1, medium: 0, low: 0 },
+            { name: 'Platform Config', critical: 0, high: 0, medium: 0, low: 1 },
+          ],
+        }
+      : null;
+
     return {
       target,
       mode,
       summary,
       vulnerabilities: findings,
-      coverage: ['SAST', 'SCA', 'Secrets', 'IaC', 'API Security', 'Misconfigurations'],
+      coverage: ['SAST', 'SCA', 'Secrets', 'IaC', 'API Security', 'Semgrep Rules', 'Misconfigurations'],
+      repoSummary,
     };
+  };
+
+  const categorizeVuln = (vuln) => {
+    const title = (vuln.title || '').toLowerCase();
+    const category = (vuln.category || '').toLowerCase();
+    if (title.includes('secret') || category.includes('secret')) return 'Secrets';
+    if (title.includes('sql') || title.includes('injection')) return 'Injection';
+    if (title.includes('auth') || title.includes('password') || category.includes('auth')) return 'Auth';
+    if (category.includes('sca') || category.includes('dependency')) return 'Dependencies';
+    return 'Misconfig';
+  };
+
+  const buildHeatmap = (vulns = []) => {
+    const rows = ['Secrets', 'Injection', 'Auth', 'Dependencies', 'Misconfig'];
+    const cols = ['critical', 'high', 'medium', 'low'];
+    const grid = rows.map((row) =>
+      cols.map((col) => ({
+        row,
+        col,
+        count: vulns.filter((v) => categorizeVuln(v) === row && v.severity === col).length,
+      }))
+    );
+    return { rows, cols, grid };
   };
 
   React.useEffect(() => {
@@ -120,7 +187,13 @@ export default function CodeScanner() {
 
   const checkUserAccess = async () => {
     try {
-      const user = await secpro.auth.me();
+      const user = await ironroot.auth.me();
+
+      if (!user || user.role === 'guest') {
+        setHasAccess(false);
+        setAccessStatus({ type: 'guest', message: 'Log in to run scans and view full findings' });
+        return;
+      }
 
       if (user?.role === 'admin') {
         setHasAccess(true);
@@ -129,7 +202,7 @@ export default function CodeScanner() {
       }
       
       // Check if user has an active trial
-      const trials = await secpro.entities.TrialRequest.filter({ 
+      const trials = await ironroot.entities.TrialRequest.filter({ 
         email: user.email,
         status: 'trial_active'
       });
@@ -140,11 +213,10 @@ export default function CodeScanner() {
         const endDate = new Date(trial.trialEndDate);
         
         if (now <= endDate) {
-          setHasAccess(true);
           const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
           setAccessStatus({ 
             type: 'trial', 
-            message: `Trial Active - ${daysLeft} days remaining` 
+            message: `Trial Active - Limited Access (${daysLeft} days remaining)` 
           });
         } else {
           setAccessStatus({ 
@@ -156,7 +228,7 @@ export default function CodeScanner() {
       }
 
       // Check if user has approved status (converted customer)
-      const converted = await secpro.entities.TrialRequest.filter({ 
+      const converted = await ironroot.entities.TrialRequest.filter({ 
         email: user.email,
         status: 'converted'
       });
@@ -200,8 +272,8 @@ export default function CodeScanner() {
       
       // Save scan history and activity log
       try {
-        const user = await secpro.auth.me();
-        await secpro.entities.ScanHistory.create({
+        const user = await ironroot.auth.me();
+        await ironroot.entities.ScanHistory.create({
           scanType: 'file_upload',
           targetName: file.name,
           summary: analysis.summary || { critical: 0, high: 0, medium: 0, low: 0, total: 0 },
@@ -210,7 +282,7 @@ export default function CodeScanner() {
           scannedBy: user.email
         });
 
-        await secpro.entities.ActivityLog.create({
+        await ironroot.entities.ActivityLog.create({
           userEmail: user.email,
           action: 'code_scan_performed',
           details: {
@@ -257,8 +329,8 @@ export default function CodeScanner() {
       setScanResults(analysis);
 
       try {
-        const user = await secpro.auth.me();
-        await secpro.entities.ScanHistory.create({
+        const user = await ironroot.auth.me();
+        await ironroot.entities.ScanHistory.create({
           userEmail: user.email,
           scanType: isGithub ? 'GitHub Repo Scan' : 'Website Scan',
           target: urlTrimmed,
@@ -295,6 +367,27 @@ export default function CodeScanner() {
     }));
   };
 
+  const heatmap = scanResults ? buildHeatmap(scanResults.vulnerabilities) : null;
+  const timeline = scanResults
+    ? [
+        { label: 'Queued', time: '00:00', status: 'done' },
+        { label: 'Static Analysis', time: '00:32', status: 'done' },
+        { label: 'Dependency Scan', time: '01:10', status: 'done' },
+        { label: 'Secrets Scan', time: '01:42', status: 'done' },
+        { label: 'Risk Scoring', time: '02:08', status: 'done' },
+        { label: 'Report Generated', time: '02:26', status: 'done' },
+      ]
+    : [];
+  const fixPipeline = scanResults
+    ? [
+        { step: 'Triage & Assign', detail: 'Critical/High routed to SecOps', status: 'done' },
+        { step: 'Auto-Fix Suggestions', detail: 'Secure patches generated', status: 'done' },
+        { step: 'Code Review', detail: 'Security review in progress', status: 'active' },
+        { step: 'Patch & Validate', detail: 'CI security tests queued', status: 'pending' },
+        { step: 'Close & Verify', detail: 'Retest required', status: 'pending' },
+      ]
+    : [];
+
   return (
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6">
@@ -330,6 +423,11 @@ export default function CodeScanner() {
           </TabsList>
 
           <TabsContent value="scan" className="mt-6">
+            <AuthGate
+              title="Sign in to run scans"
+              description="Advanced scanning, exploitability scoring, and remediation pipelines are available to paid orgs or admins."
+              plans={['paid']}
+            >
 
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
           {/* File Upload */}
@@ -478,10 +576,160 @@ export default function CodeScanner() {
               </CardContent>
             </Card>
 
+            <div className="grid lg:grid-cols-3 gap-6">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Scan Timeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {timeline.map((item) => (
+                      <div key={item.label} className="flex items-center gap-3">
+                        <div className={`h-2 w-2 rounded-full ${
+                          item.status === 'done' ? 'bg-green-400' :
+                          item.status === 'active' ? 'bg-blue-400' : 'bg-gray-500'
+                        }`} />
+                        <div className="flex-1">
+                          <div className="text-sm text-gray-200">{item.label}</div>
+                          <div className="text-xs text-gray-500">{item.time}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-800 border-gray-700 lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-white">Risk Heatmap</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {heatmap && (
+                    <div className="space-y-2 text-xs text-gray-400">
+                      <div className="grid grid-cols-5 gap-2">
+                        <div />
+                        {heatmap.cols.map((col) => (
+                          <div key={col} className="text-center uppercase">{col}</div>
+                        ))}
+                      </div>
+                      {heatmap.rows.map((row, rowIdx) => (
+                        <div key={row} className="grid grid-cols-5 gap-2 items-center">
+                          <div className="text-gray-300">{row}</div>
+                          {heatmap.grid[rowIdx].map((cell) => {
+                            const intensity = Math.min(cell.count * 2, 6);
+                            return (
+                              <div
+                                key={`${cell.row}-${cell.col}`}
+                                className={`h-8 rounded border border-gray-700 flex items-center justify-center ${
+                                  cell.count === 0 ? 'bg-gray-900/60' : 'bg-red-500/10'
+                                }`}
+                                style={{ boxShadow: cell.count ? `0 0 ${intensity * 4}px rgba(255,77,77,0.3)` : 'none' }}
+                              >
+                                <span className="text-gray-200">{cell.count}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-800 border-gray-700 lg:col-span-1">
+                <CardHeader>
+                  <CardTitle className="text-white">Fix Pipeline</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {fixPipeline.map((item) => (
+                      <div key={item.step} className="flex items-start gap-3">
+                        <div className={`h-2 w-2 rounded-full mt-2 ${
+                          item.status === 'done' ? 'bg-green-400' :
+                          item.status === 'active' ? 'bg-blue-400' : 'bg-gray-500'
+                        }`} />
+                        <div>
+                          <div className="text-sm text-gray-200">{item.step}</div>
+                          <div className="text-xs text-gray-500">{item.detail}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             <div>
               <h2 className="text-2xl font-bold text-white mb-4">
                 Vulnerabilities Found ({scanResults.vulnerabilities?.length || 0})
               </h2>
+              {scanResults.repoSummary && (
+                <Card className="bg-gray-800 border-gray-700 mb-6">
+                  <CardHeader>
+                    <CardTitle className="text-white">Repository Insights</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {scanResults.repoSummary.overview && (
+                      <p className="text-sm text-gray-400 mb-6">
+                        {scanResults.repoSummary.overview}
+                      </p>
+                    )}
+                    <div className="grid md:grid-cols-3 gap-6">
+                      <div>
+                        <p className="text-sm text-gray-400 mb-3">Pages & Routes</p>
+                        <div className="space-y-2">
+                          {scanResults.repoSummary.pages.map((page) => (
+                            <div key={page.path} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                              <div className="text-sm text-white">{page.path}</div>
+                              <div className="text-xs text-gray-500 mt-1">Findings: {page.findings}</div>
+                            </div>
+                          ))}
+                          {scanResults.repoSummary.apiRoutes.map((route) => (
+                            <div key={route.path} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                              <div className="text-xs text-gray-400">API Route</div>
+                              <div className="text-sm text-white">{route.path}</div>
+                              <div className="text-xs text-gray-500 mt-1">Findings: {route.findings}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-3">Components & Services</p>
+                        <div className="space-y-2">
+                          {scanResults.repoSummary.components.map((component) => (
+                            <div key={component.name} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-white">{component.name}</span>
+                                <span className="text-xs text-gray-400">
+                                  {component.critical + component.high + component.medium + component.low} findings
+                                </span>
+                              </div>
+                              <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                                {component.critical > 0 && <Badge className="bg-red-500">C{component.critical}</Badge>}
+                                {component.high > 0 && <Badge className="bg-orange-500">H{component.high}</Badge>}
+                                {component.medium > 0 && <Badge className="bg-yellow-500">M{component.medium}</Badge>}
+                                {component.low > 0 && <Badge className="bg-blue-500">L{component.low}</Badge>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-400 mb-3">File Overview</p>
+                        <div className="space-y-2">
+                          {scanResults.repoSummary.files.map((file) => (
+                            <div key={file.path} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                              <div className="text-xs text-gray-400">{file.type}</div>
+                              <div className="text-sm text-white">{file.path}</div>
+                              <div className="text-xs text-gray-500 mt-1">Findings: {file.findings}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
               {scanResults.vulnerabilities?.length > 0 ? (
                 <div className="space-y-4">
                   {!hasAccess && (
@@ -525,6 +773,16 @@ export default function CodeScanner() {
                                   {vuln.owasp_category && (
                                     <Badge variant="outline" className="text-xs border-orange-500 text-orange-400">
                                       OWASP: {vuln.owasp_category}
+                                    </Badge>
+                                  )}
+                                  {vuln.ruleId && (
+                                    <Badge variant="outline" className="text-xs border-green-500 text-green-400">
+                                      {vuln.ruleId}
+                                    </Badge>
+                                  )}
+                                  {vuln.filePath && (
+                                    <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
+                                      {vuln.filePath}
                                     </Badge>
                                   )}
                                   {(vuln.component || vuln.currentVersion) && (
@@ -664,10 +922,17 @@ export default function CodeScanner() {
             </CardContent>
           </Card>
         )}
+            </AuthGate>
           </TabsContent>
 
           <TabsContent value="schedule" className="mt-6">
-            <ScanScheduler />
+            <AuthGate
+              title="Sign in to schedule scans"
+              description="Scheduled scanning, notifications, and automation require a paid org or admin access."
+              plans={['paid']}
+            >
+              <ScanScheduler />
+            </AuthGate>
           </TabsContent>
         </Tabs>
       </div>

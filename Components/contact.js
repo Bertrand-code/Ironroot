@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +40,7 @@ export default function Contact() {
     }
 
     try {
-      await secpro.entities.Lead.create(formData);
+      await ironroot.entities.Lead.create(formData);
       setStatus('success');
       setFormData({
         fullName: '',

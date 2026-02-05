@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, UserPlus, Mail, Shield, Search, Trash2, Edit } from 'lucide-react';
+import { Users, UserPlus, Mail, Shield, Search, Building } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function UserManagement() {
@@ -14,18 +13,26 @@ export default function UserManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
+  const [inviteOrgId, setInviteOrgId] = useState('');
+  const [invitePassword, setInvitePassword] = useState('');
+  const [orgForm, setOrgForm] = useState({
+    name: '',
+    industry: 'Security',
+    size: '1-50',
+    plan: 'paid',
+  });
   const queryClient = useQueryClient();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await secpro.auth.me();
+        const currentUser = await ironroot.auth.me();
         if (currentUser.role !== 'admin') {
-          window.location.href = '/';
+          window.location.href = '/login';
         }
         setUser(currentUser);
       } catch {
-        window.location.href = '/';
+        window.location.href = '/login';
       }
     };
     checkAuth();
@@ -33,17 +40,37 @@ export default function UserManagement() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
-    queryFn: () => secpro.entities.User.list('-created_date'),
+    queryFn: () => ironroot.entities.User.list('-created_date'),
     enabled: !!user,
   });
 
+  const { data: orgs = [] } = useQuery({
+    queryKey: ['orgs'],
+    queryFn: () => ironroot.entities.Organization.list('name'),
+    enabled: !!user,
+  });
+
+  const orgMap = orgs.reduce((acc, orgItem) => {
+    acc[orgItem.id] = orgItem.name;
+    return acc;
+  }, {});
+
+  useEffect(() => {
+    if (!inviteOrgId && user?.orgId) {
+      setInviteOrgId(user.orgId);
+    }
+  }, [inviteOrgId, user]);
+
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, role }) => {
-      await secpro.users.inviteUser(email, role);
-      await secpro.entities.ActivityLog.create({
+      await ironroot.users.inviteUser(email, role, inviteOrgId || null);
+      if (invitePassword) {
+        await ironroot.users.setPassword({ email, password: invitePassword });
+      }
+      await ironroot.entities.ActivityLog.create({
         userEmail: user.email,
         action: 'user_invited',
-        details: { invitedEmail: email, role },
+        details: { invitedEmail: email, role, orgId: inviteOrgId || null },
         timestamp: new Date().toISOString()
       });
     },
@@ -51,12 +78,43 @@ export default function UserManagement() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setInviteEmail('');
       setInviteRole('user');
+      setInvitePassword('');
+    },
+  });
+
+  const createOrgMutation = useMutation({
+    mutationFn: async () => {
+      await ironroot.entities.Organization.create({
+        name: orgForm.name,
+        slug: orgForm.name.toLowerCase().replace(/\s+/g, '-'),
+        industry: orgForm.industry,
+        size: orgForm.size,
+        plan: orgForm.plan,
+      });
+      await ironroot.entities.ActivityLog.create({
+        userEmail: user.email,
+        action: 'org_created',
+        details: { orgName: orgForm.name },
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['orgs'] });
+      setOrgForm({ name: '', industry: 'Security', size: '1-50', plan: 'paid' });
     },
   });
 
   const updateUserRoleMutation = useMutation({
     mutationFn: ({ userId, newRole }) => 
-      secpro.entities.User.update(userId, { role: newRole }),
+      ironroot.entities.User.update(userId, { role: newRole }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  const updateUserOrgMutation = useMutation({
+    mutationFn: ({ userId, orgId }) =>
+      ironroot.entities.User.update(userId, { orgId: orgId || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -64,7 +122,8 @@ export default function UserManagement() {
 
   const filteredUsers = users.filter(u => 
     u.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.full_name?.toLowerCase().includes(searchQuery.toLowerCase())
+    u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (!user) return null;
@@ -132,7 +191,7 @@ export default function UserManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
+            <div className="grid md:grid-cols-5 gap-4">
               <Input
                 placeholder="user@example.com"
                 value={inviteEmail}
@@ -140,15 +199,34 @@ export default function UserManagement() {
                 className="bg-gray-900 border-gray-700 text-white"
                 type="email"
               />
-              <Select value={inviteRole} onValueChange={setInviteRole}>
-                <SelectTrigger className="bg-gray-900 border-gray-700 text-white w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">User</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                placeholder="Temporary password"
+                value={invitePassword}
+                onChange={(e) => setInvitePassword(e.target.value)}
+                className="bg-gray-900 border-gray-700 text-white"
+                type="password"
+              />
+              <p className="text-xs text-gray-500 md:col-span-5">
+                Temporary passwords must be 10+ characters with 1 uppercase letter and 1 number.
+              </p>
+              <select
+                className="select"
+                value={inviteOrgId}
+                onChange={(e) => setInviteOrgId(e.target.value)}
+              >
+                <option value="">Assign org (optional)</option>
+                {orgs.map((org) => (
+                  <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
+              </select>
+              <select
+                className="select"
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+              >
+                <option value="user">User</option>
+                <option value="admin">Admin</option>
+              </select>
               <Button
                 onClick={() => inviteUserMutation.mutate({ email: inviteEmail, role: inviteRole })}
                 disabled={!inviteEmail || inviteUserMutation.isPending}
@@ -157,6 +235,72 @@ export default function UserManagement() {
                 <Mail className="mr-2 h-4 w-4" />
                 Send Invite
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Organizations */}
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Building className="h-5 w-5" />
+              Organization Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-5 gap-4 mb-6">
+              <Input
+                placeholder="Organization Name"
+                value={orgForm.name}
+                onChange={(e) => setOrgForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+              <Input
+                placeholder="Industry"
+                value={orgForm.industry}
+                onChange={(e) => setOrgForm((prev) => ({ ...prev, industry: e.target.value }))}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+              <select
+                className="select"
+                value={orgForm.size}
+                onChange={(e) => setOrgForm((prev) => ({ ...prev, size: e.target.value }))}
+              >
+                <option value="1-50">1-50 employees</option>
+                <option value="51-200">51-200 employees</option>
+                <option value="201-1000">201-1000 employees</option>
+                <option value="1000+">1000+ employees</option>
+              </select>
+              <select
+                className="select"
+                value={orgForm.plan}
+                onChange={(e) => setOrgForm((prev) => ({ ...prev, plan: e.target.value }))}
+              >
+                <option value="paid">Paid</option>
+                <option value="trial">Trial</option>
+              </select>
+              <Button
+                onClick={() => createOrgMutation.mutate()}
+                disabled={!orgForm.name || createOrgMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Create Org
+              </Button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {orgs.map((org) => (
+                <div key={org.id} className="bg-gray-900/60 p-4 rounded-lg border border-gray-700">
+                  <h4 className="text-white font-semibold">{org.name}</h4>
+                  <p className="text-xs text-gray-500">{org.industry} • {org.size}</p>
+                  <div className="mt-2 flex items-center gap-2 text-xs">
+                    <Badge className={org.plan === 'paid' ? 'bg-green-500' : 'bg-yellow-500'}>
+                      {org.plan}
+                    </Badge>
+                    <span className="text-gray-500">Org ID: {org.id}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -197,23 +341,38 @@ export default function UserManagement() {
                       <p className="text-xs text-gray-500">
                         Joined: {new Date(u.created_date).toLocaleDateString()}
                       </p>
+                      {u.orgId && (
+                        <p className="text-xs text-gray-500">
+                          Org: {orgMap[u.orgId] || u.orgId}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Select
-                      value={u.role}
-                      onValueChange={(newRole) => 
-                        updateUserRoleMutation.mutate({ userId: u.id, newRole })
+                    <select
+                      className="select"
+                      value={u.orgId || ''}
+                      onChange={(e) =>
+                        updateUserOrgMutation.mutate({ userId: u.id, orgId: e.target.value })
                       }
                     >
-                      <SelectTrigger className="bg-gray-900 border-gray-700 text-white w-28">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      <option value="">No org</option>
+                      {orgs.map((org) => (
+                        <option key={org.id} value={org.id}>
+                          {org.name}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      className="select"
+                      value={u.role}
+                      onChange={(e) =>
+                        updateUserRoleMutation.mutate({ userId: u.id, newRole: e.target.value })
+                      }
+                    >
+                      <option value="user">User</option>
+                      <option value="admin">Admin</option>
+                    </select>
                     <Badge className={u.role === 'admin' ? 'bg-red-500' : 'bg-blue-500'}>
                       {u.role}
                     </Badge>

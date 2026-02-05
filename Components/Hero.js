@@ -16,7 +16,7 @@ export default function Hero() {
             Defend every release with AI-driven security that moves at your pace.
           </h1>
           <p className="text-lead">
-            SecPro unifies code scanning, offensive testing, GRC compliance, and
+            Ironroot unifies code scanning, offensive testing, GRC compliance, and
             board-ready reporting into a single intelligence layer. Replace point
             tools with a security operating system built for enterprise velocity.
           </p>

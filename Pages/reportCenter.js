@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,14 +8,19 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, Ba
 import { Shield, AlertTriangle, TrendingUp, Activity, Target, Download, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ReportGenerator from '../components/Reports/ReportGenerator';
+import AuthGate from '@/components/AuthGate';
+import { useAuth } from '@/lib/useAuth';
 
 export default function ReportCenter() {
   const [timeRange, setTimeRange] = useState('30d');
   const [filterType, setFilterType] = useState('all');
+  const { user, org } = useAuth();
+  const canRead = user && user.role !== 'guest' && (user.role === 'admin' || org?.plan === 'paid');
 
   const { data: scanHistory = [] } = useQuery({
     queryKey: ['scanHistory'],
-    queryFn: () => secpro.entities.ScanHistory.list('-created_date', 200),
+    queryFn: () => ironroot.entities.ScanHistory.list('-created_date', 200),
+    enabled: !!canRead,
   });
 
   // Filter by scan type
@@ -98,6 +103,11 @@ export default function ReportCenter() {
   return (
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6">
+        <AuthGate
+          title="Sign in to view security reports"
+          description="Executive reporting, scan analytics, and risk scoring are available to paid organizations."
+          plans={['paid']}
+        >
         <div className="mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Security Report Center</h1>
@@ -372,6 +382,7 @@ export default function ReportCenter() {
             </div>
           </CardContent>
         </Card>
+        </AuthGate>
       </div>
     </div>
   );

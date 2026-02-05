@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, X, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,7 +25,7 @@ export default function NotificationBell() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const currentUser = await secpro.auth.me();
+        const currentUser = await ironroot.auth.me();
         setUser(currentUser);
       } catch (err) {
         console.error('Failed to get user:', err);
@@ -36,21 +36,21 @@ export default function NotificationBell() {
 
   const { data: notifications = [] } = useQuery({
     queryKey: ['notifications', user?.email],
-    queryFn: () => secpro.entities.Notification.filter({ userEmail: user.email }, '-created_date', 50),
-    enabled: !!user,
+    queryFn: () => ironroot.entities.Notification.filter({ userEmail: user.email }, '-created_date', 50),
+    enabled: !!user && user.role !== 'guest',
     refetchInterval: 10000, // Poll every 10 seconds for real-time feel
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: (notificationId) => 
-      secpro.entities.Notification.update(notificationId, { isRead: true }),
+      ironroot.entities.Notification.update(notificationId, { isRead: true }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
   });
 
   const deleteNotificationMutation = useMutation({
-    mutationFn: (notificationId) => secpro.entities.Notification.delete(notificationId),
+    mutationFn: (notificationId) => ironroot.entities.Notification.delete(notificationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
@@ -67,7 +67,7 @@ export default function NotificationBell() {
     }
   };
 
-  if (!user) return null;
+  if (!user || user.role === 'guest') return null;
 
   return (
     <div className="relative">

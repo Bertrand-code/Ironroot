@@ -4,19 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GitBranch, Github, GitlabIcon as GitLab, Code, Copy, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
 
 export default function CICDIntegration() {
   const [copied, setCopied] = useState(null);
+  const [notice, setNotice] = useState('');
 
   const copyToClipboard = (text, id) => {
     navigator.clipboard.writeText(text);
     setCopied(id);
-    toast.success('Copied to clipboard');
+    setNotice('Copied to clipboard.');
     setTimeout(() => setCopied(null), 2000);
+    setTimeout(() => setNotice(''), 2500);
   };
 
-  const githubAction = `name: SecPro Security Scan
+  const githubAction = `name: Ironroot Security Scan
 
 on:
   push:
@@ -31,10 +32,10 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Run SecPro Security Scan
+    - name: Run Ironroot Security Scan
       run: |
-        curl -X POST https://api.secpro.com/scan \\
-          -H "Authorization: Bearer \${{ secrets.SECPRO_API_KEY }}" \\
+        curl -X POST https://api.ironroot.com/scan \\
+          -H "Authorization: Bearer \${{ secrets.IRONROOT_API_KEY }}" \\
           -H "Content-Type: application/json" \\
           -d '{
             "repository": "\${{ github.repository }}",
@@ -47,30 +48,30 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: security-scan-results
-        path: secpro-results.json`;
+        path: ironroot-results.json`;
 
   const gitlabCI = `stages:
   - security
 
-secpro-security-scan:
+ironroot-security-scan:
   stage: security
   image: alpine:latest
   before_script:
     - apk add --no-cache curl jq
   script:
     - |
-      curl -X POST https://api.secpro.com/scan \\
-        -H "Authorization: Bearer \${SECPRO_API_KEY}" \\
+      curl -X POST https://api.ironroot.com/scan \\
+        -H "Authorization: Bearer \${IRONROOT_API_KEY}" \\
         -H "Content-Type: application/json" \\
         -d "{
           \\"repository\\": \\"\${CI_PROJECT_URL}\\",
           \\"branch\\": \\"\${CI_COMMIT_BRANCH}\\",
           \\"scan_type\\": \\"full\\"
         }" \\
-        -o secpro-results.json
+        -o ironroot-results.json
   artifacts:
     reports:
-      junit: secpro-results.json
+      junit: ironroot-results.json
     when: always
   only:
     - main
@@ -81,7 +82,7 @@ secpro-security-scan:
     agent any
     
     environment {
-        SECPRO_API_KEY = credentials('secpro-api-key')
+        IRONROOT_API_KEY = credentials('ironroot-api-key')
     }
     
     stages {
@@ -89,11 +90,11 @@ secpro-security-scan:
             steps {
                 script {
                     sh '''
-                        curl -X POST https://api.secpro.com/scan \\
-                          -H "Authorization: Bearer ${SECPRO_API_KEY}" \\
+                        curl -X POST https://api.ironroot.com/scan \\
+                          -H "Authorization: Bearer ${IRONROOT_API_KEY}" \\
                           -H "Content-Type: application/json" \\
                           -d "{\\"repository\\":\\"${GIT_URL}\\",\\"branch\\":\\"${GIT_BRANCH}\\",\\"scan_type\\":\\"full\\"}" \\
-                          -o secpro-results.json
+                          -o ironroot-results.json
                     '''
                 }
             }
@@ -101,11 +102,11 @@ secpro-security-scan:
         
         stage('Publish Results') {
             steps {
-                archiveArtifacts artifacts: 'secpro-results.json', fingerprint: true
+                archiveArtifacts artifacts: 'ironroot-results.json', fingerprint: true
                 publishHTML([
                     reportDir: '.',
-                    reportFiles: 'secpro-results.json',
-                    reportName: 'SecPro Security Scan'
+                    reportFiles: 'ironroot-results.json',
+                    reportName: 'Ironroot Security Scan'
                 ])
             }
         }
@@ -129,7 +130,7 @@ WORKDIR /app
 
 COPY . .
 
-CMD ["sh", "-c", "curl -X POST https://api.secpro.com/scan -H 'Authorization: Bearer \${SECPRO_API_KEY}' -d @scan-config.json"]`;
+CMD ["sh", "-c", "curl -X POST https://api.ironroot.com/scan -H 'Authorization: Bearer \${IRONROOT_API_KEY}' -d @scan-config.json"]`;
 
   return (
     <div className="min-h-screen bg-gray-900 py-12">
@@ -139,8 +140,13 @@ CMD ["sh", "-c", "curl -X POST https://api.secpro.com/scan -H 'Authorization: Be
             <GitBranch className="h-8 w-8 text-red-500" />
             CI/CD Integration
           </h1>
-          <p className="text-gray-400 mt-2">Integrate SecPro security scanning into your CI/CD pipeline</p>
+          <p className="text-gray-400 mt-2">Integrate Ironroot security scanning into your CI/CD pipeline</p>
         </div>
+        {notice && (
+          <div className="mb-6 bg-green-500/10 border border-green-500/30 text-green-300 px-4 py-3 rounded">
+            {notice}
+          </div>
+        )}
 
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           <Card className="bg-gray-800 border-gray-700">
@@ -199,8 +205,8 @@ CMD ["sh", "-c", "curl -X POST https://api.secpro.com/scan -H 'Authorization: Be
                   <code>{githubAction}</code>
                 </pre>
                 <div className="mt-4 space-y-2 text-sm text-gray-400">
-                  <p>📁 Save this as <code className="text-blue-400">.github/workflows/secpro-scan.yml</code></p>
-                  <p>🔑 Add your SecPro API key as a GitHub secret: <code className="text-blue-400">SECPRO_API_KEY</code></p>
+                  <p>📁 Save this as <code className="text-blue-400">.github/workflows/ironroot-scan.yml</code></p>
+                  <p>🔑 Add your Ironroot API key as a GitHub secret: <code className="text-blue-400">IRONROOT_API_KEY</code></p>
                 </div>
               </CardContent>
             </Card>
@@ -230,7 +236,7 @@ CMD ["sh", "-c", "curl -X POST https://api.secpro.com/scan -H 'Authorization: Be
                 </pre>
                 <div className="mt-4 space-y-2 text-sm text-gray-400">
                   <p>📁 Save this as <code className="text-blue-400">.gitlab-ci.yml</code></p>
-                  <p>🔑 Add your SecPro API key as a CI/CD variable: <code className="text-blue-400">SECPRO_API_KEY</code></p>
+                  <p>🔑 Add your Ironroot API key as a CI/CD variable: <code className="text-blue-400">IRONROOT_API_KEY</code></p>
                 </div>
               </CardContent>
             </Card>
@@ -260,7 +266,7 @@ CMD ["sh", "-c", "curl -X POST https://api.secpro.com/scan -H 'Authorization: Be
                 </pre>
                 <div className="mt-4 space-y-2 text-sm text-gray-400">
                   <p>📁 Save this as <code className="text-blue-400">Jenkinsfile</code></p>
-                  <p>🔑 Add your SecPro API key as a Jenkins credential: <code className="text-blue-400">secpro-api-key</code></p>
+                  <p>🔑 Add your Ironroot API key as a Jenkins credential: <code className="text-blue-400">ironroot-api-key</code></p>
                 </div>
               </CardContent>
             </Card>
@@ -289,8 +295,8 @@ CMD ["sh", "-c", "curl -X POST https://api.secpro.com/scan -H 'Authorization: Be
                   <code>{dockerConfig}</code>
                 </pre>
                 <div className="mt-4 space-y-2 text-sm text-gray-400">
-                  <p>🐳 Build: <code className="text-blue-400">docker build -t secpro-scanner .</code></p>
-                  <p>▶️ Run: <code className="text-blue-400">docker run -e SECPRO_API_KEY=your_key secpro-scanner</code></p>
+                  <p>🐳 Build: <code className="text-blue-400">docker build -t ironroot-scanner .</code></p>
+                  <p>▶️ Run: <code className="text-blue-400">docker run -e IRONROOT_API_KEY=your_key ironroot-scanner</code></p>
                 </div>
               </CardContent>
             </Card>

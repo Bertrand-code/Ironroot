@@ -20,8 +20,8 @@ const serviceItems = [
   },
   {
     icon: BrainCircuit,
-    title: 'Red Team Operations',
-    description: 'Real-world attack simulations combining technical exploits, social engineering, and physical security assessments.',
+    title: 'AI Pentest Service',
+    description: 'Continuous AI-driven penetration testing that validates exploitability, maps blast radius, and auto-builds remediation playbooks.',
   },
 ];
 

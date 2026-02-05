@@ -1,6 +1,8 @@
 import React from 'react';
 import Logo from './Logo';
 import { createPageUrl } from '../utils';
+import { useAuth } from '@/lib/useAuth';
+import { ironroot } from '@/lib/ironrootClient';
 
 const NavItem = ({ children, href }) => (
   <a
@@ -12,6 +14,8 @@ const NavItem = ({ children, href }) => (
 );
 
 export default function Header() {
+  const { user, org } = useAuth();
+  const isAuthed = user && user.role !== 'guest';
   const navLinks = [
     { name: 'Home', href: createPageUrl('Home'), isPage: true },
     { name: 'Scanner', href: createPageUrl('CodeScanner'), isPage: true },
@@ -27,7 +31,7 @@ export default function Header() {
       <div className="container header__inner">
         <a href={createPageUrl('Home')} className="brand">
           <Logo className="brand__logo" />
-          <span>SecPro</span>
+          <span>Ironroot</span>
         </a>
         <nav className="nav">
           {navLinks.map((link) => (
@@ -36,7 +40,17 @@ export default function Header() {
             </NavItem>
           ))}
         </nav>
-        <a href={`${createPageUrl('Home')}#trial`} className="btn btn--primary">Start Free Trial</a>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {org && isAuthed && <span className="card__meta">{org.name}</span>}
+          {isAuthed ? (
+            <button className="btn btn--ghost" onClick={() => ironroot.auth.logout()}>
+              Log out
+            </button>
+          ) : (
+            <a className="btn btn--ghost" href="/login">Log in</a>
+          )}
+          <a href={`${createPageUrl('Home')}#trial`} className="btn btn--primary">Start Free Trial</a>
+        </div>
       </div>
     </header>
   );

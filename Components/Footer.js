@@ -10,13 +10,13 @@ export default function Footer() {
           <div>
             <a href="#" className="brand">
               <Logo className="brand__logo" />
-              <span>SecPro</span>
+              <span>Ironroot</span>
             </a>
             <p className="text-lead" style={{ marginTop: '12px' }}>
               Enterprise security that unifies AI scanning, offensive testing, and GRC intelligence.
             </p>
             <p className="card__meta" style={{ marginTop: '12px' }}>
-              &copy; {new Date().getFullYear()} SecPro. All Rights Reserved.
+              &copy; {new Date().getFullYear()} Ironroot. All Rights Reserved.
             </p>
           </div>
           
@@ -36,7 +36,7 @@ export default function Footer() {
               </div>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <Mail className="brand__logo" size={16} />
-                <span className="card__meta">contact@secpro.com</span>
+                <span className="card__meta">contact@ironroot.com</span>
               </div>
             </div>
           </div>

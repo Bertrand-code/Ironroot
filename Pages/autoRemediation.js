@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ export default function AutoRemediation() {
 
   const { data: scanHistory = [] } = useQuery({
     queryKey: ['scanHistory'],
-    queryFn: () => secpro.entities.ScanHistory.list('-created_date', 50),
+    queryFn: () => ironroot.entities.ScanHistory.list('-created_date', 50),
   });
 
   // Get all vulnerabilities from recent scans
@@ -35,7 +35,7 @@ export default function AutoRemediation() {
     setSelectedVuln(vulnerability);
     
     try {
-      const fixSolution = await secpro.integrations.Core.InvokeLLM({
+      const fixSolution = await ironroot.integrations.Core.InvokeLLM({
         prompt: `You are an expert security engineer specializing in automated vulnerability remediation.
 
 Generate a COMPLETE, PRODUCTION-READY code fix for this vulnerability:

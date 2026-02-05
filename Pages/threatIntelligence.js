@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Search, Radar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import AuthGate from '@/components/AuthGate';
 
 const intelLibrary = [
   {
@@ -153,12 +154,12 @@ export default function ThreatIntelligence() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-2" style={{ alignItems: 'start' }}>
-          <div className="card card--glass">
-            <CardHeader>
-              <CardTitle>Active Intelligence Streams</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="grid grid-2" style={{ alignItems: 'start' }}>
+            <div className="card card--glass">
+              <CardHeader>
+                <CardTitle>Active Intelligence Streams</CardTitle>
+              </CardHeader>
+              <CardContent>
               <div className="grid" style={{ gap: '12px' }}>
                 {filteredIntel.map((item) => (
                   <button
@@ -182,64 +183,70 @@ export default function ThreatIntelligence() {
             </CardContent>
           </div>
 
-          <AnimatePresence mode="wait">
-            {selectedIntel && (
-              <motion.div
-                key={selectedIntel.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="card card--glass"
-              >
-                <CardHeader>
-                  <CardTitle>Operational Brief</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid" style={{ gap: '16px' }}>
-                    <div>
-                      <div className="badge">Executive Summary</div>
-                      <p className="card__meta" style={{ marginTop: '8px' }}>{selectedIntel.summary}</p>
-                    </div>
-                    <div>
-                      <div className="badge">Key CVEs</div>
-                      <div className="grid" style={{ gap: '10px', marginTop: '10px' }}>
-                        {selectedIntel.cves.map((cve) => (
-                          <div key={cve.id} className="card card--glass" style={{ padding: '12px' }}>
-                            <strong>{cve.id}</strong>
-                            <p className="card__meta">CVSS {cve.cvss} · {cve.focus}</p>
-                          </div>
-                        ))}
+          <AuthGate
+            title="Sign in to view operational briefs"
+            description="Threat actor profiles, IOC intelligence, and response playbooks require an authenticated account."
+            plans={['paid']}
+          >
+            <AnimatePresence mode="wait">
+              {selectedIntel && (
+                <motion.div
+                  key={selectedIntel.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  className="card card--glass"
+                >
+                  <CardHeader>
+                    <CardTitle>Operational Brief</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid" style={{ gap: '16px' }}>
+                      <div>
+                        <div className="badge">Executive Summary</div>
+                        <p className="card__meta" style={{ marginTop: '8px' }}>{selectedIntel.summary}</p>
+                      </div>
+                      <div>
+                        <div className="badge">Key CVEs</div>
+                        <div className="grid" style={{ gap: '10px', marginTop: '10px' }}>
+                          {selectedIntel.cves.map((cve) => (
+                            <div key={cve.id} className="card card--glass" style={{ padding: '12px' }}>
+                              <strong>{cve.id}</strong>
+                              <p className="card__meta">CVSS {cve.cvss} · {cve.focus}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="badge">MITRE Tactics</div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
+                          {selectedIntel.tactics.map((tactic) => (
+                            <span key={tactic} className="badge">{tactic}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="badge">Indicators of Concern</div>
+                        <ul className="grid" style={{ gap: '6px', marginTop: '8px' }}>
+                          {selectedIntel.iocs.map((ioc) => (
+                            <li key={ioc} className="card__meta">• {ioc}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <div className="badge">Recommended Response</div>
+                        <p className="card__meta" style={{ marginTop: '8px' }}>{selectedIntel.remediation}</p>
+                      </div>
+                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <Button>Push to SOC Queue</Button>
+                        <Button variant="ghost" onClick={() => (window.location.href = '/threatReport')}>Export Brief</Button>
                       </div>
                     </div>
-                    <div>
-                      <div className="badge">MITRE Tactics</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
-                        {selectedIntel.tactics.map((tactic) => (
-                          <span key={tactic} className="badge">{tactic}</span>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="badge">Indicators of Concern</div>
-                      <ul className="grid" style={{ gap: '6px', marginTop: '8px' }}>
-                        {selectedIntel.iocs.map((ioc) => (
-                          <li key={ioc} className="card__meta">• {ioc}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <div className="badge">Recommended Response</div>
-                      <p className="card__meta" style={{ marginTop: '8px' }}>{selectedIntel.remediation}</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      <Button>Push to SOC Queue</Button>
-                      <Button variant="ghost">Export Brief</Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  </CardContent>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </AuthGate>
         </div>
 
         <div className="section" style={{ paddingBottom: 0 }}>
@@ -249,61 +256,67 @@ export default function ThreatIntelligence() {
               Drive execution with targeted programs that align offensive testing, defensive monitoring, and compliance needs.
             </p>
           </div>
-          <Tabs defaultValue="watchlist">
-            <TabsList>
-              <TabsTrigger value="watchlist">Response Watchlist</TabsTrigger>
-              <TabsTrigger value="ioc">IOC Monitoring</TabsTrigger>
-              <TabsTrigger value="exposure">Exposure Map</TabsTrigger>
-            </TabsList>
-            <TabsContent value="watchlist">
-              <div className="grid grid-3" style={{ marginTop: '16px' }}>
-                {watchlist.map((item) => (
-                  <div key={item.title} className="card card--glass">
-                    <div className="badge">{item.severity.toUpperCase()}</div>
-                    <h3 className="card__title" style={{ marginTop: '10px' }}>{item.title}</h3>
-                    <p className="card__meta">Owner: {item.owner}</p>
-                    <p className="card__meta">ETA: {item.eta}</p>
-                  </div>
-                ))}
-              </div>
-            </TabsContent>
-            <TabsContent value="ioc">
-              <div className="grid grid-2" style={{ marginTop: '16px' }}>
-                <div className="card card--glass">
-                  <CardTitle>IOC Feeds</CardTitle>
-                  <ul className="grid" style={{ gap: '8px', marginTop: '10px' }}>
-                    {['Suspicious IP clusters', 'Malicious domains', 'File hash alerts'].map((item) => (
-                      <li key={item} className="card__meta">• {item}</li>
-                    ))}
-                  </ul>
+          <AuthGate
+            title="Sign in to manage response programs"
+            description="IOC monitoring, response watchlists, and exposure mapping are available after login."
+            plans={['paid']}
+          >
+            <Tabs defaultValue="watchlist">
+              <TabsList>
+                <TabsTrigger value="watchlist">Response Watchlist</TabsTrigger>
+                <TabsTrigger value="ioc">IOC Monitoring</TabsTrigger>
+                <TabsTrigger value="exposure">Exposure Map</TabsTrigger>
+              </TabsList>
+              <TabsContent value="watchlist">
+                <div className="grid grid-3" style={{ marginTop: '16px' }}>
+                  {watchlist.map((item) => (
+                    <div key={item.title} className="card card--glass">
+                      <div className="badge">{item.severity.toUpperCase()}</div>
+                      <h3 className="card__title" style={{ marginTop: '10px' }}>{item.title}</h3>
+                      <p className="card__meta">Owner: {item.owner}</p>
+                      <p className="card__meta">ETA: {item.eta}</p>
+                    </div>
+                  ))}
                 </div>
-                <div className="card card--glass">
-                  <CardTitle>Detection Coverage</CardTitle>
-                  <p className="card__meta" style={{ marginTop: '8px' }}>
-                    94% of high-risk IOCs are mapped to SIEM rules and endpoint policies.
-                  </p>
-                  <Button style={{ marginTop: '12px' }} variant="secondary">
-                    Sync to SIEM
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="exposure">
-              <div className="grid grid-3" style={{ marginTop: '16px' }}>
-                {[
-                  { label: 'Internet-Facing Assets', value: '42' },
-                  { label: 'Critical Open Ports', value: '6' },
-                  { label: 'Shadow IT Services', value: '11' },
-                ].map((item) => (
-                  <div key={item.label} className="card card--glass">
-                    <div className="badge">Exposure</div>
-                    <h3 className="card__title" style={{ marginTop: '10px' }}>{item.value}</h3>
-                    <p className="card__meta">{item.label}</p>
+              </TabsContent>
+              <TabsContent value="ioc">
+                <div className="grid grid-2" style={{ marginTop: '16px' }}>
+                  <div className="card card--glass">
+                    <CardTitle>IOC Feeds</CardTitle>
+                    <ul className="grid" style={{ gap: '8px', marginTop: '10px' }}>
+                      {['Suspicious IP clusters', 'Malicious domains', 'File hash alerts'].map((item) => (
+                        <li key={item} className="card__meta">• {item}</li>
+                      ))}
+                    </ul>
                   </div>
-                ))}
-              </div>
-            </TabsContent>
-          </Tabs>
+                  <div className="card card--glass">
+                    <CardTitle>Detection Coverage</CardTitle>
+                    <p className="card__meta" style={{ marginTop: '8px' }}>
+                      94% of high-risk IOCs are mapped to SIEM rules and endpoint policies.
+                    </p>
+                    <Button style={{ marginTop: '12px' }} variant="secondary">
+                      Sync to SIEM
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="exposure">
+                <div className="grid grid-3" style={{ marginTop: '16px' }}>
+                  {[
+                    { label: 'Internet-Facing Assets', value: '42' },
+                    { label: 'Critical Open Ports', value: '6' },
+                    { label: 'Shadow IT Services', value: '11' },
+                  ].map((item) => (
+                    <div key={item.label} className="card card--glass">
+                      <div className="badge">Exposure</div>
+                      <h3 className="card__title" style={{ marginTop: '10px' }}>{item.value}</h3>
+                      <p className="card__meta">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          </AuthGate>
         </div>
       </div>
     </div>

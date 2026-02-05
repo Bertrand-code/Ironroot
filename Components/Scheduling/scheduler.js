@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ export default function ScanScheduler() {
   useEffect(() => {
     const getUser = async () => {
       try {
-        const currentUser = await secpro.auth.me();
+        const currentUser = await ironroot.auth.me();
         setUser(currentUser);
       } catch (err) {
         console.error('Failed to get user:', err);
@@ -39,12 +39,12 @@ export default function ScanScheduler() {
 
   const { data: scheduledScans = [] } = useQuery({
     queryKey: ['scheduledScans', user?.email],
-    queryFn: () => secpro.entities.ScheduledScan.filter({ userEmail: user.email }, '-created_date'),
+    queryFn: () => ironroot.entities.ScheduledScan.filter({ userEmail: user.email }, '-created_date'),
     enabled: !!user,
   });
 
   const createScanMutation = useMutation({
-    mutationFn: (data) => secpro.entities.ScheduledScan.create(data),
+    mutationFn: (data) => ironroot.entities.ScheduledScan.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduledScans'] });
       setFormData({
@@ -58,7 +58,7 @@ export default function ScanScheduler() {
   });
 
   const deleteScanMutation = useMutation({
-    mutationFn: (id) => secpro.entities.ScheduledScan.delete(id),
+    mutationFn: (id) => ironroot.entities.ScheduledScan.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['scheduledScans'] });
     },

@@ -76,13 +76,13 @@ export default function SecurityDocumentation() {
 useEffect(() => {
   const checkAuth = async () => {
     try {
-      const currentUser = await secpro.auth.me();
+      const currentUser = await ironroot.auth.me();
       if (currentUser.role !== 'admin') {
-        window.location.href = '/'; // Redirect non-admins
+        window.location.href = '/login'; // Redirect non-admins
       }
       setUser(currentUser);
     } catch {
-      window.location.href = '/'; // Redirect unauthenticated users
+      window.location.href = '/login'; // Redirect unauthenticated users
     }
   };
   checkAuth();
@@ -139,7 +139,7 @@ useEffect(() => {
                 </p>
                 <pre className="bg-gray-900 p-3 rounded text-sm text-gray-300 overflow-x-auto">
 {`// Check user access before scanning
-const trials = await secpro.entities.TrialRequest.filter({ 
+const trials = await ironroot.entities.TrialRequest.filter({ 
   email: user.email,
   status: 'trial_active'
 });
@@ -170,7 +170,7 @@ if (trials.length > 0) {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-300">
-                All entities in SecPro enforce Row-Level Security to ensure data isolation and access control.
+                All entities in Ironroot enforce Row-Level Security to ensure data isolation and access control.
               </p>
 
               <div className="space-y-3">
@@ -247,8 +247,8 @@ if (trials.length > 0) {
                 <h4 className="font-semibold text-white mb-2">Environment Variable Setup</h4>
                 <pre className="bg-gray-900 p-3 rounded text-sm text-gray-300 overflow-x-auto">
 {`# .env file (NEVER commit this to version control)
-SECPRO_API_KEY=your_api_key_here
-SECPRO_SECRET_KEY=your_secret_key_here
+IRONROOT_API_KEY=your_api_key_here
+IRONROOT_SECRET_KEY=your_secret_key_here
 
 # In CI/CD pipelines (GitHub Actions, GitLab CI, Jenkins)
 # Store as encrypted secrets/environment variables`}

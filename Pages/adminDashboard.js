@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,17 +9,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
+  const [org, setOrg] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await secpro.auth.me();
+        const currentUser = await ironroot.auth.me();
         if (currentUser.role !== 'admin') {
-          window.location.href = '/';
+          window.location.href = '/login';
         }
         setUser(currentUser);
+        const currentOrg = await ironroot.auth.currentOrg();
+        setOrg(currentOrg);
       } catch {
-        window.location.href = '/';
+        window.location.href = '/login';
       }
     };
     checkAuth();
@@ -27,25 +30,25 @@ export default function AdminDashboard() {
 
   const { data: trialRequests = [], refetch } = useQuery({
     queryKey: ['trialRequests'],
-    queryFn: () => secpro.entities.TrialRequest.list('-created_date'),
+    queryFn: () => ironroot.entities.TrialRequest.list('-created_date'),
     enabled: !!user,
   });
 
   const { data: leads = [] } = useQuery({
     queryKey: ['leads'],
-    queryFn: () => secpro.entities.Lead.list('-created_date'),
+    queryFn: () => ironroot.entities.Lead.list('-created_date'),
     enabled: !!user,
   });
 
   const { data: visitors = [] } = useQuery({
     queryKey: ['visitors'],
-    queryFn: () => secpro.entities.Visitor.list('-lastVisit'),
+    queryFn: () => ironroot.entities.Visitor.list('-lastVisit'),
     enabled: !!user,
   });
 
   const { data: scanHistory = [] } = useQuery({
     queryKey: ['scanHistory'],
-    queryFn: () => secpro.entities.ScanHistory.list('-created_date'),
+    queryFn: () => ironroot.entities.ScanHistory.list('-created_date'),
     enabled: !!user,
   });
 
@@ -65,10 +68,10 @@ export default function AdminDashboard() {
       updateData.approvalDate = now.toISOString();
     }
     
-    await secpro.entities.TrialRequest.update(id, updateData);
+    await ironroot.entities.TrialRequest.update(id, updateData);
     
     // Log the action
-    await secpro.entities.ActivityLog.create({
+    await ironroot.entities.ActivityLog.create({
       userEmail: user.email,
       action: 'trial_approved',
       details: {
@@ -83,14 +86,14 @@ export default function AdminDashboard() {
     // If approved, invite the user and send welcome email
     if (status === 'trial_active' || status === 'approved') {
       try {
-        await secpro.users.inviteUser(request.email, 'user');
-        await secpro.integrations.Core.SendEmail({
-          from_name: 'SecPro Security Platform',
+        await ironroot.users.inviteUser(request.email, 'user');
+        await ironroot.integrations.Core.SendEmail({
+          from_name: 'Ironroot Security Platform',
           to: request.email,
-          subject: 'Welcome to SecPro - Your Trial Access is Approved!',
+          subject: 'Welcome to Ironroot - Your Trial Access is Approved!',
           body: `Dear ${request.fullName},
 
-Great news! Your trial request for SecPro has been approved.
+Great news! Your trial request for Ironroot has been approved.
 
 You can now access our platform with the following credentials:
 - Email: ${request.email}
@@ -107,17 +110,17 @@ ${request.interestedIn === 'defensive_security' ? '- Real-time threat detection 
 ${request.interestedIn === 'offensive_security' ? '- Penetration testing tools\n- Red team operations\n- Vulnerability assessments' : ''}
 ${request.interestedIn === 'code_scanning' ? '- AI-powered code security scanning\n- Vulnerability detection\n- Automated fix recommendations' : ''}
 ${request.interestedIn === 'grc_services' ? '- Compliance assessments (PCI DSS, SOC 2)\n- Risk quantification\n- Board-ready reports' : ''}
-${request.interestedIn === 'full_platform' ? '- Complete access to all SecPro features\n- Defensive & Offensive Security\n- Code Scanning & GRC Services' : ''}
+${request.interestedIn === 'full_platform' ? '- Complete access to all Ironroot features\n- Defensive & Offensive Security\n- Code Scanning & GRC Services' : ''}
 
 Need help? Our team is here to support you.
 
 Best regards,
-The SecPro Team
+The Ironroot Team
 
 ---
-SecPro Security Platform
+Ironroot Security Platform
 622 Rainier Ave S, Seattle, WA 98144
-contact@secpro.com`
+contact@ironroot.com`
         });
       } catch (error) {
         console.error('Error inviting user:', error);
@@ -150,7 +153,10 @@ contact@secpro.com`
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Admin Dashboard</h1>
+            {org && <p className="text-xs text-gray-500 mt-1">Organization: {org.name}</p>}
+          </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => window.location.href = '/userManagement'}>
               User Management
@@ -161,7 +167,7 @@ contact@secpro.com`
             <Button variant="outline" onClick={() => window.location.href = '/secDocumentation'}>
               Security Docs
             </Button>
-            <Button variant="outline" onClick={() => secpro.auth.logout()}>
+            <Button variant="outline" onClick={() => ironroot.auth.logout()}>
               Logout
             </Button>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { secpro } from '@/lib/secproClient';
+import { ironroot } from '@/lib/ironrootClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,13 +34,13 @@ export default function AdminNotepad() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await secpro.auth.me();
+        const currentUser = await ironroot.auth.me();
         if (currentUser.role !== 'admin') {
-          window.location.href = '/';
+          window.location.href = '/login';
         }
         setUser(currentUser);
       } catch {
-        window.location.href = '/';
+        window.location.href = '/login';
       }
     };
     checkAuth();
@@ -48,12 +48,12 @@ export default function AdminNotepad() {
 
   const { data: notes = [] } = useQuery({
     queryKey: ['adminNotes'],
-    queryFn: () => secpro.entities.AdminNote.list('-created_date'),
+    queryFn: () => ironroot.entities.AdminNote.list('-created_date'),
     enabled: !!user,
   });
 
   const createNoteMutation = useMutation({
-    mutationFn: (data) => secpro.entities.AdminNote.create(data),
+    mutationFn: (data) => ironroot.entities.AdminNote.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminNotes'] });
       resetForm();
@@ -61,7 +61,7 @@ export default function AdminNotepad() {
   });
 
   const updateNoteMutation = useMutation({
-    mutationFn: ({ id, data }) => secpro.entities.AdminNote.update(id, data),
+    mutationFn: ({ id, data }) => ironroot.entities.AdminNote.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminNotes'] });
       resetForm();
@@ -69,7 +69,7 @@ export default function AdminNotepad() {
   });
 
   const deleteNoteMutation = useMutation({
-    mutationFn: (id) => secpro.entities.AdminNote.delete(id),
+    mutationFn: (id) => ironroot.entities.AdminNote.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminNotes'] });
     },

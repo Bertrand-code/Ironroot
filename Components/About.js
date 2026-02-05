@@ -35,7 +35,7 @@ export default function About() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-white">The Minds Behind the Attacks</h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">SecPro was founded by veterans of national intelligence agencies and enterprise security teams with a mission: to deliver enterprise-grade security through an AI-powered unified platform.</p>
+          <p className="mt-4 text-lg text-gray-400 max-w-3xl mx-auto">Ironroot was founded by veterans of national intelligence agencies and enterprise security teams with a mission: to deliver enterprise-grade security through an AI-powered unified platform.</p>
           <div className="mt-6 w-24 h-1 bg-red-500 mx-auto"></div>
         </motion.div>
 

@@ -43,7 +43,7 @@ export default function Platform() {
           transition={{ duration: 0.5 }}
           className="section-header"
         >
-          <h2 className="title-lg">The SecPro Platform</h2>
+          <h2 className="title-lg">The Ironroot Platform</h2>
           <p className="text-lead">
             Four integrated solutions working together to provide comprehensive security coverage for your organization.
           </p>

@@ -195,7 +195,7 @@ export default function CodeScanner() {
         return;
       }
 
-      if (user?.role === 'admin') {
+      if (user?.role === 'admin' || user?.role === 'owner') {
         setHasAccess(true);
         setAccessStatus({ type: 'admin', message: 'Admin Access - Full Visibility' });
         return;
@@ -427,6 +427,7 @@ export default function CodeScanner() {
               title="Sign in to run scans"
               description="Advanced scanning, exploitability scoring, and remediation pipelines are available to paid orgs or admins."
               plans={['paid']}
+              feature="codeScannerPro"
             >
 
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
@@ -930,6 +931,7 @@ export default function CodeScanner() {
               title="Sign in to schedule scans"
               description="Scheduled scanning, notifications, and automation require a paid org or admin access."
               plans={['paid']}
+              feature="codeScannerPro"
             >
               <ScanScheduler />
             </AuthGate>

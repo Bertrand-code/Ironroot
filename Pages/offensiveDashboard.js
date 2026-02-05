@@ -195,6 +195,7 @@ export default function OffensiveDashboard() {
           title="Sign in to access offensive operations"
           description="Red-team programs, AI pentest execution, and detailed findings are available after login."
           plans={['paid']}
+          feature="advancedPentest"
         >
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
           <Card className="bg-gray-800 border-gray-700">

@@ -7,7 +7,7 @@ import { useAuth } from '@/lib/useAuth';
 export default function LoginPage() {
   const { user, org } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
-  const [setup, setSetup] = useState({ orgName: '', email: 'btuyisenge40@gmail.com', password: '', plan: 'paid' });
+  const [setup, setSetup] = useState({ orgName: '', email: '', password: '', plan: 'paid' });
   const [needsSetup, setNeedsSetup] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -115,14 +115,14 @@ export default function LoginPage() {
 
         {needsSetup ? (
           <form onSubmit={handleSetup} className="card card--glass" style={{ display: 'grid', gap: '16px' }}>
-            <h3 className="card__title">Create Admin Account</h3>
-            <p className="card__meta">No admin account found yet. Create the owner account to unlock the platform.</p>
+            <h3 className="card__title">Create Owner Account</h3>
+            <p className="card__meta">No owner account found yet. Create the primary owner to unlock the platform.</p>
             <div>
               <label className="card__meta">Organization Name</label>
               <Input name="orgName" value={setup.orgName} onChange={handleSetupChange} required />
             </div>
             <div>
-              <label className="card__meta">Admin Email</label>
+              <label className="card__meta">Owner Email</label>
               <Input name="email" value={setup.email} onChange={handleSetupChange} required />
             </div>
             <div>
@@ -139,7 +139,7 @@ export default function LoginPage() {
             </div>
             {error && <div className="alert">{error}</div>}
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating…' : 'Create Admin'}
+              {loading ? 'Creating…' : 'Create Owner'}
             </Button>
             <Button type="button" variant="ghost" onClick={handleResetDemo} disabled={loading}>
               Reset Demo Data

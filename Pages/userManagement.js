@@ -27,12 +27,13 @@ export default function UserManagement() {
     description: '',
   });
   const queryClient = useQueryClient();
+  const canManageAdmins = user?.role === 'owner';
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const currentUser = await ironroot.auth.me();
-        if (currentUser.role !== 'admin') {
+        if (!['admin', 'owner'].includes(currentUser.role)) {
           window.location.href = '/login';
         }
         setUser(currentUser);
@@ -151,8 +152,8 @@ export default function UserManagement() {
   });
 
   const updateUserRoleMutation = useMutation({
-    mutationFn: ({ userId, newRole }) => 
-      ironroot.entities.User.update(userId, { role: newRole }),
+    mutationFn: ({ userId, newRole }) =>
+      ironroot.users.assignRole({ userId, role: newRole }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -176,6 +177,9 @@ export default function UserManagement() {
 
   const approveAdminRequestMutation = useMutation({
     mutationFn: async (request) => {
+      if (user.role !== 'owner') {
+        throw new Error('Owner approval required.');
+      }
       const userRecord = await ironroot.users.inviteUser(request.email, 'admin', user?.orgId || null);
       await ironroot.entities.AdminRequest.update(request.id, { status: 'approved' });
       await ironroot.entities.ActivityLog.create({
@@ -245,7 +249,7 @@ export default function UserManagement() {
                 <div>
                   <p className="text-sm text-gray-400">Admins</p>
                   <p className="text-2xl font-bold text-white">
-                    {users.filter(u => u.role === 'admin').length}
+                    {users.filter(u => ['admin', 'owner'].includes(u.role)).length}
                   </p>
                 </div>
                 <Shield className="h-8 w-8 text-red-500" />
@@ -319,9 +323,10 @@ export default function UserManagement() {
                 className="select"
                 value={inviteRole}
                 onChange={(e) => setInviteRole(e.target.value)}
+                disabled={!canManageAdmins}
               >
                 <option value="user">User</option>
-                <option value="admin">Admin</option>
+                {canManageAdmins && <option value="admin">Admin</option>}
               </select>
               <Button
                 onClick={() => inviteUserMutation.mutate({ email: inviteEmail, role: inviteRole })}
@@ -466,14 +471,14 @@ export default function UserManagement() {
                     <div className="flex gap-2">
                       <Button
                         className="bg-green-600 hover:bg-green-700"
-                        disabled={req.status !== 'pending'}
+                        disabled={!canManageAdmins || req.status !== 'pending'}
                         onClick={() => approveAdminRequestMutation.mutate(req)}
                       >
                         Approve
                       </Button>
                       <Button
                         variant="ghost"
-                        disabled={req.status !== 'pending'}
+                        disabled={!canManageAdmins || req.status !== 'pending'}
                         onClick={() => denyAdminRequestMutation.mutate(req)}
                       >
                         Deny
@@ -481,6 +486,9 @@ export default function UserManagement() {
                     </div>
                   </div>
                 ))}
+                {!canManageAdmins && (
+                  <p className="text-xs text-gray-500">Only the owner can approve admin access.</p>
+                )}
               </div>
             )}
           </CardContent>
@@ -569,11 +577,13 @@ export default function UserManagement() {
                       onChange={(e) =>
                         updateUserRoleMutation.mutate({ userId: u.id, newRole: e.target.value })
                       }
+                      disabled={!canManageAdmins || u.role === 'owner'}
                     >
                       <option value="user">User</option>
                       <option value="admin">Admin</option>
+                      {u.role === 'owner' && <option value="owner">Owner</option>}
                     </select>
-                    <Badge className={u.role === 'admin' ? 'bg-red-500' : 'bg-blue-500'}>
+                    <Badge className={u.role === 'admin' ? 'bg-red-500' : u.role === 'owner' ? 'bg-purple-500' : 'bg-blue-500'}>
                       {u.role}
                     </Badge>
                   </div>

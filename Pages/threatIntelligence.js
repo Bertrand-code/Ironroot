@@ -521,6 +521,7 @@ SNYK_TOKEN=`;
             title="Sign in to view operational briefs"
             description="Threat actor profiles, IOC intelligence, and response playbooks require an authenticated account."
             plans={['paid']}
+            feature="threatIntelLive"
           >
             <AnimatePresence mode="wait">
               {selectedIntel && (
@@ -594,6 +595,7 @@ SNYK_TOKEN=`;
             title="Sign in to manage response programs"
             description="IOC monitoring, response watchlists, and exposure mapping are available after login."
             plans={['paid']}
+            feature="threatIntelLive"
           >
             <Tabs defaultValue="watchlist">
               <TabsList>

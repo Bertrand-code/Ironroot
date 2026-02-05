@@ -35,7 +35,7 @@ export default function AdminNotepad() {
     const checkAuth = async () => {
       try {
         const currentUser = await ironroot.auth.me();
-        if (currentUser.role !== 'admin') {
+        if (!['admin', 'owner'].includes(currentUser.role)) {
           window.location.href = '/login';
         }
         setUser(currentUser);

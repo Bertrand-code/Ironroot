@@ -8,6 +8,7 @@ export default function ThreatReport() {
       title="Sign in to export reports"
       description="PDF-ready threat reports are available to authenticated users."
       plans={['paid']}
+      feature="reportExports"
     >
       <div className="print-page">
         <div className="print-toolbar">

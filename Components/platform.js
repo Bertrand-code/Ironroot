@@ -30,6 +30,20 @@ const platforms = [
     description: 'Upload or push code for automated security analysis. AI identifies vulnerabilities and provides severity-based resolution suggestions.',
     features: ['Code Analysis', 'API Security', 'Severity Scoring', 'Fix Recommendations']
   },
+  {
+    icon: Shield,
+    title: 'Attack Surface Monitoring',
+    description: 'Centralized asset inventory with exposure tracking and continuous discovery.',
+    features: ['Asset Inventory', 'Exposure Alerts', 'ASM Coverage', 'Live Enrichment'],
+    link: '/AssetInventory'
+  },
+  {
+    icon: BarChart3,
+    title: 'Risk Register',
+    description: 'Executive-level risk tracking with mitigation and ownership workflows.',
+    features: ['Risk Ownership', 'Mitigation Tracking', 'Executive Views', 'Acceptance Workflow'],
+    link: '/RiskRegister'
+  },
 ];
 
 export default function Platform() {

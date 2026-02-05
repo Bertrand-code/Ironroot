@@ -32,7 +32,7 @@ export default function SecurityDocumentation() {
                 </h3>
                 <ul className="space-y-2 text-sm text-gray-300">
                   <li>✅ <strong>Row-Level Security (RLS):</strong> All entities have admin-only access for sensitive operations</li>
-                  <li>✅ <strong>Role-Based Access Control:</strong> Only users with <code className="bg-gray-900 px-2 py-1 rounded text-red-400">role === 'admin'</code> can access admin features</li>
+                  <li>✅ <strong>Role-Based Access Control:</strong> Only users with <code className="bg-gray-900 px-2 py-1 rounded text-red-400">role === 'admin'</code> or <code className="bg-gray-900 px-2 py-1 rounded text-red-400">role === 'owner'</code> can access admin features</li>
                   <li>✅ <strong>Email Verification:</strong> All users must verify their email before accessing the platform</li>
                   <li>✅ <strong>Session Management:</strong> Secure JWT tokens with automatic expiration</li>
                   <li>✅ <strong>API Key Rotation:</strong> Rotate API keys every 90 days for security compliance</li>
@@ -77,7 +77,7 @@ useEffect(() => {
   const checkAuth = async () => {
     try {
       const currentUser = await ironroot.auth.me();
-      if (currentUser.role !== 'admin') {
+      if (!['admin', 'owner'].includes(currentUser.role)) {
         window.location.href = '/login'; // Redirect non-admins
       }
       setUser(currentUser);

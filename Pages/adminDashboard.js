@@ -16,7 +16,7 @@ export default function AdminDashboard() {
     const checkAuth = async () => {
       try {
         const currentUser = await ironroot.auth.me();
-        if (currentUser.role !== 'admin') {
+        if (!['admin', 'owner'].includes(currentUser.role)) {
           window.location.href = '/login';
         }
         setUser(currentUser);
@@ -452,7 +452,7 @@ contact@ironroot.com`
                           Org: {orgMap[userItem.orgId] || 'Unassigned'} • Group: {groupMap[userItem.groupId] || 'None'}
                         </p>
                       </div>
-                      <Badge className={userItem.role === 'admin' ? 'bg-red-500' : 'bg-blue-500'}>
+                      <Badge className={userItem.role === 'admin' ? 'bg-red-500' : userItem.role === 'owner' ? 'bg-purple-500' : 'bg-blue-500'}>
                         {userItem.role}
                       </Badge>
                     </div>

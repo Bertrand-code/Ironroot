@@ -16,6 +16,15 @@ const NavItem = ({ children, href }) => (
 export default function Header() {
   const { user, org } = useAuth();
   const isAuthed = user && user.role !== 'guest';
+  const isOwner = user?.role === 'owner';
+  const authedLinks = [];
+  if (isAuthed) {
+    authedLinks.push({ name: 'Assets', href: createPageUrl('AssetInventory'), isPage: true });
+    authedLinks.push({ name: 'Risk Register', href: createPageUrl('RiskRegister'), isPage: true });
+  }
+  if (isOwner) {
+    authedLinks.push({ name: 'Control Center', href: createPageUrl('ControlCenter'), isPage: true });
+  }
   const navLinks = [
     { name: 'Home', href: createPageUrl('Home'), isPage: true },
     { name: 'Scanner', href: createPageUrl('CodeScanner'), isPage: true },
@@ -23,6 +32,7 @@ export default function Header() {
     { name: 'Auto-Fix', href: createPageUrl('AutoRemediation'), isPage: true },
     { name: 'Training', href: createPageUrl('SecurityTraining'), isPage: true },
     { name: 'Reports', href: createPageUrl('ReportCenter'), isPage: true },
+    ...authedLinks,
     { name: 'Contact', href: `${createPageUrl('Home')}#contact` },
   ];
 

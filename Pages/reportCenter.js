@@ -15,7 +15,7 @@ export default function ReportCenter() {
   const [timeRange, setTimeRange] = useState('30d');
   const [filterType, setFilterType] = useState('all');
   const { user, org } = useAuth();
-  const canRead = user && user.role !== 'guest' && (user.role === 'admin' || org?.plan === 'paid');
+  const canRead = user && user.role !== 'guest' && ((user.role === 'admin' || user.role === 'owner') || org?.plan === 'paid');
 
   const { data: scanHistory = [] } = useQuery({
     queryKey: ['scanHistory'],
@@ -107,6 +107,7 @@ export default function ReportCenter() {
           title="Sign in to view security reports"
           description="Executive reporting, scan analytics, and risk scoring are available to paid organizations."
           plans={['paid']}
+          feature="reportExports"
         >
         <div className="mb-8 flex justify-between items-center">
           <div>

@@ -15,6 +15,9 @@ const pageMap = {
   DefensiveDashboard: '/defensiveDashboard',
   OffensiveDashboard: '/offensiveDashboard',
   AiAssistant: '/aiAssistant',
+  AssetInventory: '/assetInventory',
+  RiskRegister: '/riskRegister',
+  ControlCenter: '/controlCenter',
 };
 
 export const createPageUrl = (pageName) => {

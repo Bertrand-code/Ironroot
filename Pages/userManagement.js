@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserPlus, Mail, Shield, Search, Building } from 'lucide-react';
+import { Users, UserPlus, Mail, Shield, Search, Building, Layers } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function UserManagement() {
@@ -14,12 +14,17 @@ export default function UserManagement() {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
   const [inviteOrgId, setInviteOrgId] = useState('');
+  const [inviteGroupId, setInviteGroupId] = useState('');
   const [invitePassword, setInvitePassword] = useState('');
   const [orgForm, setOrgForm] = useState({
     name: '',
     industry: 'Security',
     size: '1-50',
     plan: 'paid',
+  });
+  const [groupForm, setGroupForm] = useState({
+    name: '',
+    description: '',
   });
   const queryClient = useQueryClient();
 
@@ -50,6 +55,12 @@ export default function UserManagement() {
     enabled: !!user,
   });
 
+  const { data: groups = [] } = useQuery({
+    queryKey: ['groups'],
+    queryFn: () => ironroot.entities.Group.list('name'),
+    enabled: !!user,
+  });
+
   const { data: adminRequests = [] } = useQuery({
     queryKey: ['adminRequests'],
     queryFn: () => ironroot.entities.AdminRequest.list('-created_date'),
@@ -61,22 +72,33 @@ export default function UserManagement() {
     return acc;
   }, {});
 
+  const groupMap = groups.reduce((acc, groupItem) => {
+    acc[groupItem.id] = groupItem.name;
+    return acc;
+  }, {});
+
   useEffect(() => {
     if (!inviteOrgId && user?.orgId) {
       setInviteOrgId(user.orgId);
     }
   }, [inviteOrgId, user]);
 
+  useEffect(() => {
+    if (!inviteGroupId && groups.length > 0) {
+      setInviteGroupId(groups[0].id);
+    }
+  }, [inviteGroupId, groups]);
+
   const inviteUserMutation = useMutation({
     mutationFn: async ({ email, role }) => {
-      await ironroot.users.inviteUser(email, role, inviteOrgId || null);
+      await ironroot.users.inviteUser(email, role, inviteOrgId || null, inviteGroupId || null);
       if (invitePassword) {
         await ironroot.users.setPassword({ email, password: invitePassword });
       }
       await ironroot.entities.ActivityLog.create({
         userEmail: user.email,
         action: 'user_invited',
-        details: { invitedEmail: email, role, orgId: inviteOrgId || null },
+        details: { invitedEmail: email, role, orgId: inviteOrgId || null, groupId: inviteGroupId || null },
         timestamp: new Date().toISOString()
       });
     },
@@ -88,6 +110,24 @@ export default function UserManagement() {
     },
   });
 
+  const createGroupMutation = useMutation({
+    mutationFn: async () => {
+      await ironroot.entities.Group.create({
+        name: groupForm.name,
+        description: groupForm.description,
+      });
+      await ironroot.entities.ActivityLog.create({
+        userEmail: user.email,
+        action: 'group_created',
+        details: { groupName: groupForm.name },
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['groups'] });
+      setGroupForm({ name: '', description: '' });
+    },
+  });
   const createOrgMutation = useMutation({
     mutationFn: async () => {
       await ironroot.entities.Organization.create({
@@ -121,6 +161,14 @@ export default function UserManagement() {
   const updateUserOrgMutation = useMutation({
     mutationFn: ({ userId, orgId }) =>
       ironroot.entities.User.update(userId, { orgId: orgId || null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  const updateUserGroupMutation = useMutation({
+    mutationFn: ({ userId, groupId }) =>
+      ironroot.entities.User.update(userId, { groupId: groupId || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
     },
@@ -229,7 +277,7 @@ export default function UserManagement() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-5 gap-4">
+            <div className="grid md:grid-cols-6 gap-4">
               <Input
                 placeholder="user@example.com"
                 value={inviteEmail}
@@ -244,7 +292,7 @@ export default function UserManagement() {
                 className="bg-gray-900 border-gray-700 text-white"
                 type="password"
               />
-              <p className="text-xs text-gray-500 md:col-span-5">
+              <p className="text-xs text-gray-500 md:col-span-6">
                 Temporary passwords must be 10+ characters with 1 uppercase letter and 1 number.
               </p>
               <select
@@ -255,6 +303,16 @@ export default function UserManagement() {
                 <option value="">Assign org (optional)</option>
                 {orgs.map((org) => (
                   <option key={org.id} value={org.id}>{org.name}</option>
+                ))}
+              </select>
+              <select
+                className="select"
+                value={inviteGroupId}
+                onChange={(e) => setInviteGroupId(e.target.value)}
+              >
+                <option value="">Assign group (optional)</option>
+                {groups.map((group) => (
+                  <option key={group.id} value={group.id}>{group.name}</option>
                 ))}
               </select>
               <select
@@ -346,6 +404,47 @@ export default function UserManagement() {
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
             <CardTitle className="text-white flex items-center gap-2">
+              <Layers className="h-5 w-5" />
+              Group Management
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4 mb-6">
+              <Input
+                placeholder="Group name"
+                value={groupForm.name}
+                onChange={(e) => setGroupForm((prev) => ({ ...prev, name: e.target.value }))}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+              <Input
+                placeholder="Description"
+                value={groupForm.description}
+                onChange={(e) => setGroupForm((prev) => ({ ...prev, description: e.target.value }))}
+                className="bg-gray-900 border-gray-700 text-white"
+              />
+              <Button
+                onClick={() => createGroupMutation.mutate()}
+                disabled={!groupForm.name || createGroupMutation.isPending}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                Create Group
+              </Button>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {groups.map((group) => (
+                <div key={group.id} className="bg-gray-900/60 p-4 rounded-lg border border-gray-700">
+                  <h4 className="text-white font-semibold">{group.name}</h4>
+                  <p className="text-xs text-gray-500">{group.description}</p>
+                  <div className="mt-2 text-xs text-gray-500">Group ID: {group.id}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
               <Shield className="h-5 w-5" />
               Admin Access Requests
             </CardTitle>
@@ -428,9 +527,28 @@ export default function UserManagement() {
                           Org: {orgMap[u.orgId] || u.orgId}
                         </p>
                       )}
+                      {u.groupId && (
+                        <p className="text-xs text-gray-500">
+                          Group: {groupMap[u.groupId] || u.groupId}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
+                    <select
+                      className="select"
+                      value={u.groupId || ''}
+                      onChange={(e) =>
+                        updateUserGroupMutation.mutate({ userId: u.id, groupId: e.target.value })
+                      }
+                    >
+                      <option value="">No group</option>
+                      {groups.map((group) => (
+                        <option key={group.id} value={group.id}>
+                          {group.name}
+                        </option>
+                      ))}
+                    </select>
                     <select
                       className="select"
                       value={u.orgId || ''}

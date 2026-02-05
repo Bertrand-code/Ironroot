@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { ironroot } from '@/lib/ironrootClient';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Users, UserCheck, Clock, Shield } from 'lucide-react';
+import { Users, UserCheck, Clock, Shield, Building, Layers, Activity } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [org, setOrg] = useState(null);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -40,6 +41,24 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
 
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => ironroot.entities.User.list('-created_date'),
+    enabled: !!user,
+  });
+
+  const { data: orgs = [] } = useQuery({
+    queryKey: ['orgs'],
+    queryFn: () => ironroot.entities.Organization.list('name'),
+    enabled: !!user,
+  });
+
+  const { data: groups = [] } = useQuery({
+    queryKey: ['groups'],
+    queryFn: () => ironroot.entities.Group.list('name'),
+    enabled: !!user,
+  });
+
   const { data: visitors = [] } = useQuery({
     queryKey: ['visitors'],
     queryFn: () => ironroot.entities.Visitor.list('-lastVisit'),
@@ -51,6 +70,53 @@ export default function AdminDashboard() {
     queryFn: () => ironroot.entities.ScanHistory.list('-created_date'),
     enabled: !!user,
   });
+
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: () => ironroot.entities.Session.list('-lastSeen'),
+    enabled: !!user,
+  });
+
+  const { data: adminRequests = [] } = useQuery({
+    queryKey: ['adminRequests'],
+    queryFn: () => ironroot.entities.AdminRequest.list('-created_date'),
+    enabled: !!user,
+  });
+
+  const { data: activityLog = [] } = useQuery({
+    queryKey: ['activityLog'],
+    queryFn: () => ironroot.entities.ActivityLog.list('-timestamp', 12),
+    enabled: !!user,
+  });
+
+  const orgMap = orgs.reduce((acc, orgItem) => {
+    acc[orgItem.id] = orgItem.name;
+    return acc;
+  }, {});
+
+  const groupMap = groups.reduce((acc, groupItem) => {
+    acc[groupItem.id] = groupItem.name;
+    return acc;
+  }, {});
+
+  const activeSessions = sessions.filter((session) => session.status === 'active');
+  const orgUserCounts = users.reduce((acc, userItem) => {
+    if (!userItem.orgId) return acc;
+    acc[userItem.orgId] = (acc[userItem.orgId] || 0) + 1;
+    return acc;
+  }, {});
+
+  const timeAgo = (value) => {
+    if (!value) return 'just now';
+    const diff = Date.now() - new Date(value).getTime();
+    const minutes = Math.floor(diff / 60000);
+    if (minutes < 1) return 'just now';
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
 
   const updateTrialStatus = async (id, status, request) => {
     const now = new Date();
@@ -130,6 +196,30 @@ contact@ironroot.com`
     refetch();
   };
 
+  const approveAdminRequest = async (request) => {
+    const userRecord = await ironroot.users.inviteUser(request.email, 'admin', user?.orgId || null);
+    await ironroot.entities.AdminRequest.update(request.id, { status: 'approved' });
+    await ironroot.entities.ActivityLog.create({
+      userEmail: user.email,
+      action: 'admin_request_approved',
+      details: { email: request.email, userId: userRecord.id },
+      timestamp: new Date().toISOString(),
+    });
+    queryClient.invalidateQueries({ queryKey: ['adminRequests'] });
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  };
+
+  const denyAdminRequest = async (request) => {
+    await ironroot.entities.AdminRequest.update(request.id, { status: 'denied' });
+    await ironroot.entities.ActivityLog.create({
+      userEmail: user.email,
+      action: 'admin_request_denied',
+      details: { email: request.email },
+      timestamp: new Date().toISOString(),
+    });
+    queryClient.invalidateQueries({ queryKey: ['adminRequests'] });
+  };
+
   const getStatusBadge = (status) => {
     const config = {
       pending: { color: 'bg-yellow-500', label: 'Pending' },
@@ -173,7 +263,7 @@ contact@ironroot.com`
           </div>
         </div>
 
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
+        <div className="grid md:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-gray-400">Trial Requests</CardTitle>
@@ -217,6 +307,181 @@ contact@ironroot.com`
             <CardContent>
               <div className="text-2xl font-bold text-white">{scanHistory.length}</div>
               <p className="text-xs text-gray-500 mt-1">Security scans performed</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Companies</CardTitle>
+              <Building className="h-4 w-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{orgs.length}</div>
+              <p className="text-xs text-gray-500 mt-1">Active organizations</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Active Sessions</CardTitle>
+              <Activity className="h-4 w-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{activeSessions.length}</div>
+              <p className="text-xs text-gray-500 mt-1">Currently logged in</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-gray-400">Groups</CardTitle>
+              <Layers className="h-4 w-4 text-gray-400" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">{groups.length}</div>
+              <p className="text-xs text-gray-500 mt-1">Access groups</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8 mb-10">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Companies & Plans</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {orgs.map((orgItem) => (
+                  <div key={orgItem.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="text-sm text-white font-medium">{orgItem.name}</p>
+                        <p className="text-xs text-gray-500">{orgItem.industry} • {orgItem.size}</p>
+                      </div>
+                      <Badge className={orgItem.plan === 'paid' ? 'bg-green-500' : 'bg-yellow-500'}>
+                        {orgItem.plan}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Users: {orgUserCounts[orgItem.id] || 0}
+                    </p>
+                  </div>
+                ))}
+                {orgs.length === 0 && (
+                  <p className="text-sm text-gray-500">No organizations yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Active Sessions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {activeSessions.map((session) => (
+                  <div key={session.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-white">{session.email}</p>
+                        <p className="text-xs text-gray-500">Org: {orgMap[session.orgId] || 'Unassigned'}</p>
+                      </div>
+                      <span className="text-xs text-green-400">Active</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">Last seen {timeAgo(session.lastSeen)}</p>
+                  </div>
+                ))}
+                {activeSessions.length === 0 && (
+                  <p className="text-sm text-gray-500">No active sessions.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Admin Access Requests</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {adminRequests.map((request) => (
+                  <div key={request.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-white">{request.email}</p>
+                        <p className="text-xs text-gray-500">{request.reason}</p>
+                      </div>
+                      <Badge className={request.status === 'approved' ? 'bg-green-500' : request.status === 'denied' ? 'bg-red-500' : 'bg-yellow-500'}>
+                        {request.status || 'pending'}
+                      </Badge>
+                    </div>
+                    {request.status === 'pending' && (
+                      <div className="mt-3 flex gap-2">
+                        <Button className="bg-green-600 hover:bg-green-700" onClick={() => approveAdminRequest(request)}>
+                          Approve
+                        </Button>
+                        <Button variant="ghost" onClick={() => denyAdminRequest(request)}>
+                          Deny
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {adminRequests.length === 0 && (
+                  <p className="text-sm text-gray-500">No admin requests.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8 mb-10">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Current Users</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {users.slice(0, 8).map((userItem) => (
+                  <div key={userItem.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-white">{userItem.email}</p>
+                        <p className="text-xs text-gray-500">
+                          Org: {orgMap[userItem.orgId] || 'Unassigned'} • Group: {groupMap[userItem.groupId] || 'None'}
+                        </p>
+                      </div>
+                      <Badge className={userItem.role === 'admin' ? 'bg-red-500' : 'bg-blue-500'}>
+                        {userItem.role}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                {users.length === 0 && (
+                  <p className="text-sm text-gray-500">No users yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {activityLog.map((event) => (
+                  <div key={event.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                    <p className="text-sm text-white">{event.action?.replace(/_/g, ' ')}</p>
+                    <p className="text-xs text-gray-500">{event.userEmail}</p>
+                    <p className="text-xs text-gray-500">{timeAgo(event.timestamp)}</p>
+                  </div>
+                ))}
+                {activityLog.length === 0 && (
+                  <p className="text-sm text-gray-500">No activity yet.</p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Radar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AuthGate from '@/components/AuthGate';
+import { ironroot } from '@/lib/ironrootClient';
 
 const intelLibrary = [
   {
@@ -200,6 +201,11 @@ const watchlist = [
 export default function ThreatIntelligence() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState(intelLibrary[0].id);
+  const [dataSources, setDataSources] = useState([]);
+
+  useEffect(() => {
+    setDataSources(ironroot.integrations.External.status());
+  }, []);
 
   const filteredIntel = useMemo(() => {
     if (!searchQuery.trim()) return intelLibrary;
@@ -252,6 +258,29 @@ export default function ThreatIntelligence() {
             </div>
           ))}
         </div>
+
+        <Card className="card card--glass" style={{ marginBottom: '24px' }}>
+          <CardHeader>
+            <CardTitle>Threat Data Sources</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-3" style={{ gap: '12px' }}>
+              {dataSources.map((source) => (
+                <div key={source.id} className="card card--glass" style={{ padding: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div className="card__title">{source.label}</div>
+                      <div className="card__meta">{source.category}</div>
+                    </div>
+                    <span className="badge" style={{ background: source.enabled ? 'rgba(72, 240, 192, 0.16)' : undefined }}>
+                      {source.enabled ? 'Connected' : 'Not Configured'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         <Card className="card card--glass" style={{ marginBottom: '24px' }}>
           <CardContent>

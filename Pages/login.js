@@ -7,10 +7,12 @@ import { useAuth } from '@/lib/useAuth';
 export default function LoginPage() {
   const { user, org } = useAuth();
   const [form, setForm] = useState({ email: '', password: '' });
-  const [setup, setSetup] = useState({ orgName: '', email: '', password: '', plan: 'paid' });
+  const [setup, setSetup] = useState({ orgName: '', email: 'btuyisenge40@gmail.com', password: '', plan: 'paid' });
   const [needsSetup, setNeedsSetup] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [requestForm, setRequestForm] = useState({ email: '', reason: '' });
+  const [requestStatus, setRequestStatus] = useState('');
 
   useEffect(() => {
     const check = async () => {
@@ -26,6 +28,10 @@ export default function LoginPage() {
 
   const handleSetupChange = (e) => {
     setSetup((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleRequestChange = (e) => {
+    setRequestForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleSubmit = async (e) => {
@@ -71,6 +77,21 @@ export default function LoginPage() {
       setError('');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRequestAdmin = async (e) => {
+    e.preventDefault();
+    setRequestStatus('');
+    try {
+      await ironroot.users.requestAdminAccess({
+        email: requestForm.email,
+        reason: requestForm.reason,
+      });
+      setRequestStatus('submitted');
+      setRequestForm({ email: '', reason: '' });
+    } catch (err) {
+      setRequestStatus('error');
     }
   };
 
@@ -143,6 +164,26 @@ export default function LoginPage() {
             </Button>
           </form>
         )}
+
+        <form onSubmit={handleRequestAdmin} className="card card--glass" style={{ display: 'grid', gap: '12px', marginTop: '18px' }}>
+          <h3 className="card__title">Request Admin Access</h3>
+          <p className="card__meta">Admin rights are granted by the owner. Submit a request and we will review it.</p>
+          <div>
+            <label className="card__meta">Email</label>
+            <Input name="email" value={requestForm.email} onChange={handleRequestChange} required />
+          </div>
+          <div>
+            <label className="card__meta">Reason</label>
+            <Input name="reason" value={requestForm.reason} onChange={handleRequestChange} placeholder="Why you need admin access" />
+          </div>
+          {requestStatus === 'submitted' && (
+            <div className="alert">Request submitted. The owner will review shortly.</div>
+          )}
+          {requestStatus === 'error' && (
+            <div className="alert">Unable to submit request. Try again.</div>
+          )}
+          <Button type="submit">Submit Request</Button>
+        </form>
       </div>
     </div>
   );

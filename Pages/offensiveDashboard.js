@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Target, AlertCircle, Zap, FileText, ChevronRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReportGenerator from '../components/Reports/ReportGenerator';
@@ -11,10 +13,28 @@ export default function OffensiveDashboard() {
   const [expandedFinding, setExpandedFinding] = useState(null);
   const [expandedEngagement, setExpandedEngagement] = useState(null);
   const [integrationStatus, setIntegrationStatus] = useState([]);
+  const [pentestTarget, setPentestTarget] = useState('https://app.customer.com');
+  const [pentestResult, setPentestResult] = useState(null);
+  const [pentestLoading, setPentestLoading] = useState(false);
 
   useEffect(() => {
     setIntegrationStatus(ironroot.integrations.External.status());
   }, []);
+
+  const runPentest = async () => {
+    setPentestLoading(true);
+    try {
+      const result = await ironroot.integrations.Pentest.run({ target: pentestTarget });
+      setPentestResult(result);
+    } catch (err) {
+      setPentestResult({
+        target: pentestTarget,
+        error: 'Unable to run AI pentest at this time.',
+      });
+    } finally {
+      setPentestLoading(false);
+    }
+  };
 
   const engagements = [
     { 
@@ -221,6 +241,83 @@ export default function OffensiveDashboard() {
               <div className="mt-4 text-xs text-gray-500">
                 Powered by adversary emulation, chained exploit validation, and continuous retest orchestration.
               </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">AI Pentest Operations</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-3">
+                <Input
+                  value={pentestTarget}
+                  onChange={(e) => setPentestTarget(e.target.value)}
+                  placeholder="Target (domain, app, or asset group)"
+                  className="bg-gray-900 border-gray-700 text-white md:col-span-2"
+                />
+                <Button
+                  onClick={runPentest}
+                  disabled={!pentestTarget || pentestLoading}
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  {pentestLoading ? 'Running…' : 'Run AI Pentest'}
+                </Button>
+              </div>
+              {pentestResult && (
+                <div className="mt-4 space-y-3">
+                  {pentestResult.error ? (
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded">
+                      {pentestResult.error}
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid md:grid-cols-3 gap-3 text-xs text-gray-300">
+                        <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                          Target: <span className="text-white">{pentestResult.target}</span>
+                        </div>
+                        <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                          Attack Paths: <span className="text-white">{pentestResult.attackPaths}</span>
+                        </div>
+                        <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                          Exploitability Score: <span className="text-white">{pentestResult.exploitabilityScore}</span>
+                        </div>
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-3">
+                        <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                          <p className="text-xs text-gray-400 mb-2">Kill Chain</p>
+                          <div className="space-y-2">
+                            {pentestResult.killChain.map((stage) => (
+                              <div key={stage.stage} className="flex items-center justify-between text-xs">
+                                <span className="text-gray-200">{stage.stage}</span>
+                                <span className={`px-2 py-1 rounded-full ${
+                                  stage.status === 'complete' ? 'bg-green-500/10 text-green-400' :
+                                  stage.status === 'active' ? 'bg-blue-500/10 text-blue-400' : 'bg-gray-700 text-gray-400'
+                                }`}>
+                                  {stage.status}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
+                          <p className="text-xs text-gray-400 mb-2">Top Findings</p>
+                          <ul className="text-xs text-gray-300 space-y-1">
+                            {pentestResult.highlights.map((item) => (
+                              <li key={item}>• {item}</li>
+                            ))}
+                          </ul>
+                          <p className="text-xs text-gray-400 mt-3">Recommended Actions</p>
+                          <ul className="text-xs text-gray-300 space-y-1 mt-1">
+                            {pentestResult.recommendedActions.map((item) => (
+                              <li key={item}>• {item}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
           <Card className="bg-gray-800 border-gray-700">

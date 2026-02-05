@@ -44,17 +44,30 @@ export default function AIChatWidget() {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+    const nextMessages = [...messages, { role: 'user', content: userMessage }];
+    setMessages(nextMessages);
     setIsLoading(true);
 
-    const conversationHistory = messages.map(m => `${m.role === 'user' ? 'User' : 'Ironroot Sentinel'}: ${m.content}`).join('\n');
-    
-    const response = await ironroot.integrations.Core.InvokeLLM({
-      prompt: `${SYSTEM_CONTEXT}\n\nConversation so far:\n${conversationHistory}\n\nUser: ${userMessage}\n\nIronroot Sentinel:`,
-    });
+    const conversationHistory = nextMessages
+      .map((m) => `${m.role === 'user' ? 'User' : 'Ironroot Sentinel'}: ${m.content}`)
+      .join('\n');
 
-    setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-    setIsLoading(false);
+    try {
+      const response = await ironroot.integrations.Core.InvokeLLM({
+        prompt: `${SYSTEM_CONTEXT}\n\nConversation so far:\n${conversationHistory}\n\nUser: ${userMessage}\n\nIronroot Sentinel:`,
+      });
+      setMessages((prev) => [...prev, { role: 'assistant', content: response }]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'I hit a temporary issue responding. Please try again in a moment.',
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {

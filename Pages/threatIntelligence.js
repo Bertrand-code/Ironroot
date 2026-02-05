@@ -55,6 +55,102 @@ const intelLibrary = [
   },
 ];
 
+const cveIndex = [
+  {
+    id: 'CVE-2025-1183',
+    title: 'Pipeline dependency poisoning',
+    cvss: 8.2,
+    description:
+      'Malicious dependency injection in CI/CD supply chains allowing remote code execution during builds.',
+    owasp: 'A08:2021 - Software and Data Integrity Failures',
+  },
+  {
+    id: 'CVE-2024-9912',
+    title: 'OAuth token leakage via logs',
+    cvss: 9.1,
+    description:
+      'Access tokens exposed in debug logs enabling session replay and account compromise.',
+    owasp: 'A02:2021 - Cryptographic Failures',
+  },
+  {
+    id: 'CVE-2024-8810',
+    title: 'Gateway authentication bypass',
+    cvss: 8.7,
+    description:
+      'Improper authorization checks in API gateway middleware allow bypass of auth checks.',
+    owasp: 'A01:2021 - Broken Access Control',
+  },
+  {
+    id: 'CVE-2024-6731',
+    title: 'Remote access gateway exposure',
+    cvss: 7.8,
+    description:
+      'Misconfigured remote access services allow unauthorized access and lateral movement.',
+    owasp: 'A05:2021 - Security Misconfiguration',
+  },
+  {
+    id: 'CVE-2025-3021',
+    title: 'LLM agent tool misuse',
+    cvss: 7.5,
+    description:
+      'Agent tool permission misconfiguration allows data exfiltration through third-party tools.',
+    owasp: 'A04:2021 - Insecure Design',
+  },
+];
+
+const owaspIndex = [
+  {
+    id: 'A01:2021',
+    name: 'Broken Access Control',
+    summary: 'Enforce least privilege, server-side authorization, and deny-by-default policies.',
+  },
+  {
+    id: 'A02:2021',
+    name: 'Cryptographic Failures',
+    summary: 'Protect sensitive data with strong encryption, secrets management, and key rotation.',
+  },
+  {
+    id: 'A03:2021',
+    name: 'Injection',
+    summary: 'Use parameterized queries, input validation, and context-aware output encoding.',
+  },
+  {
+    id: 'A04:2021',
+    name: 'Insecure Design',
+    summary: 'Threat model early, apply secure design patterns, and enforce security requirements.',
+  },
+  {
+    id: 'A05:2021',
+    name: 'Security Misconfiguration',
+    summary: 'Harden defaults, remove unused services, and apply secure headers.',
+  },
+  {
+    id: 'A06:2021',
+    name: 'Vulnerable and Outdated Components',
+    summary: 'Maintain SBOMs, patch regularly, and monitor for dependency risks.',
+  },
+  {
+    id: 'A07:2021',
+    name: 'Identification and Authentication Failures',
+    summary: 'Enforce MFA, strong passwords, and rate limiting for login endpoints.',
+  },
+  {
+    id: 'A08:2021',
+    name: 'Software and Data Integrity Failures',
+    summary: 'Verify build artifacts, sign releases, and lock CI/CD pipelines.',
+  },
+  {
+    id: 'A09:2021',
+    name: 'Security Logging and Monitoring Failures',
+    summary: 'Centralize logging, alert on anomalies, and test incident response.',
+  },
+  {
+    id: 'A10:2021',
+    name: 'Server-Side Request Forgery (SSRF)',
+    summary: 'Validate outbound requests, segment networks, and enforce allowlists.',
+  },
+];
+
 const threatPill = {
   critical: 'badge badge--warning',
   high: 'badge badge--warning',
@@ -107,8 +203,28 @@ export default function ThreatIntelligence() {
 
   const filteredIntel = useMemo(() => {
     if (!searchQuery.trim()) return intelLibrary;
+    const query = searchQuery.toLowerCase();
     return intelLibrary.filter((item) =>
-      item.label.toLowerCase().includes(searchQuery.toLowerCase())
+      [item.label, item.summary, item.remediation, ...(item.cves || []).map((cve) => cve.id)]
+        .join(' ')
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [searchQuery]);
+
+  const cveResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return cveIndex.filter((cve) =>
+      [cve.id, cve.title, cve.description, cve.owasp].join(' ').toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
+  const owaspResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const query = searchQuery.toLowerCase();
+    return owaspIndex.filter((item) =>
+      [item.id, item.name, item.summary].join(' ').toLowerCase().includes(query)
     );
   }, [searchQuery]);
 
@@ -153,6 +269,57 @@ export default function ThreatIntelligence() {
             </div>
           </CardContent>
         </Card>
+
+        {searchQuery.trim() && (
+          <div className="grid grid-2" style={{ marginBottom: '24px' }}>
+            <Card className="card card--glass">
+              <CardHeader>
+                <CardTitle>CVE Lookup</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {cveResults.length ? (
+                  <div className="grid" style={{ gap: '12px' }}>
+                    {cveResults.map((cve) => (
+                      <div key={cve.id} className="card card--glass" style={{ padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <strong>{cve.id}</strong>
+                          <span className="badge">CVSS {cve.cvss}</span>
+                        </div>
+                        <p className="card__meta" style={{ marginTop: '6px' }}>{cve.title}</p>
+                        <p className="card__meta">{cve.description}</p>
+                        <div className="badge" style={{ marginTop: '8px' }}>{cve.owasp}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="card__meta">No CVE matches found.</div>
+                )}
+              </CardContent>
+            </Card>
+            <Card className="card card--glass">
+              <CardHeader>
+                <CardTitle>OWASP Top 10</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {owaspResults.length ? (
+                  <div className="grid" style={{ gap: '10px' }}>
+                    {owaspResults.map((item) => (
+                      <div key={item.id} className="card card--glass" style={{ padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <strong>{item.id}</strong>
+                          <span className="badge">{item.name}</span>
+                        </div>
+                        <p className="card__meta" style={{ marginTop: '6px' }}>{item.summary}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="card__meta">No OWASP matches found.</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
           <div className="grid grid-2" style={{ alignItems: 'start' }}>
             <div className="card card--glass">

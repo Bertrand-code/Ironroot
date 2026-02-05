@@ -50,6 +50,12 @@ export default function UserManagement() {
     enabled: !!user,
   });
 
+  const { data: adminRequests = [] } = useQuery({
+    queryKey: ['adminRequests'],
+    queryFn: () => ironroot.entities.AdminRequest.list('-created_date'),
+    enabled: !!user,
+  });
+
   const orgMap = orgs.reduce((acc, orgItem) => {
     acc[orgItem.id] = orgItem.name;
     return acc;
@@ -117,6 +123,38 @@ export default function UserManagement() {
       ironroot.entities.User.update(userId, { orgId: orgId || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  const approveAdminRequestMutation = useMutation({
+    mutationFn: async (request) => {
+      const userRecord = await ironroot.users.inviteUser(request.email, 'admin', user?.orgId || null);
+      await ironroot.entities.AdminRequest.update(request.id, { status: 'approved' });
+      await ironroot.entities.ActivityLog.create({
+        userEmail: user.email,
+        action: 'admin_request_approved',
+        details: { email: request.email, userId: userRecord.id },
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    },
+  });
+
+  const denyAdminRequestMutation = useMutation({
+    mutationFn: async (request) => {
+      await ironroot.entities.AdminRequest.update(request.id, { status: 'denied' });
+      await ironroot.entities.ActivityLog.create({
+        userEmail: user.email,
+        action: 'admin_request_denied',
+        details: { email: request.email },
+        timestamp: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminRequests'] });
     },
   });
 
@@ -302,6 +340,50 @@ export default function UserManagement() {
                 </div>
               ))}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gray-800 border-gray-700 mb-8">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Admin Access Requests
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {adminRequests.length === 0 ? (
+              <p className="text-sm text-gray-400">No pending admin requests.</p>
+            ) : (
+              <div className="space-y-3">
+                {adminRequests.map((req) => (
+                  <div key={req.id} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-white">{req.email}</p>
+                      <p className="text-xs text-gray-500">{req.reason}</p>
+                      <Badge className={req.status === 'approved' ? 'bg-green-500' : req.status === 'denied' ? 'bg-red-500' : 'bg-yellow-500'}>
+                        {req.status || 'pending'}
+                      </Badge>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        className="bg-green-600 hover:bg-green-700"
+                        disabled={req.status !== 'pending'}
+                        onClick={() => approveAdminRequestMutation.mutate(req)}
+                      >
+                        Approve
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        disabled={req.status !== 'pending'}
+                        onClick={() => denyAdminRequestMutation.mutate(req)}
+                      >
+                        Deny
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 

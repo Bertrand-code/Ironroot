@@ -551,16 +551,45 @@ contact@ironroot.com`
               <CardTitle className="text-white">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {activityLog.map((event) => (
-                  <div key={event.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                    <p className="text-sm text-white">{event.action?.replace(/_/g, ' ')}</p>
-                    <p className="text-xs text-gray-500">{event.userEmail}</p>
-                    <p className="text-xs text-gray-500">{timeAgo(event.timestamp)}</p>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Time</th>
+                      <th className="py-3 pr-4">Action</th>
+                      <th className="py-3 pr-4">User</th>
+                      <th className="py-3 pr-4">Location</th>
+                      <th className="py-3 pr-4">IP</th>
+                      <th className="py-3 pr-4">Details</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {activityLog.map((event) => {
+                      const session = sessions.find((s) => s.email === event.userEmail);
+                      const details = event.details
+                        ? Array.isArray(event.details)
+                          ? event.details.join(', ')
+                          : typeof event.details === 'object'
+                          ? Object.entries(event.details)
+                              .map(([key, value]) => `${key}: ${value}`)
+                              .join('; ')
+                          : event.details
+                        : '—';
+                      return (
+                        <tr key={event.id}>
+                          <td className="py-3 pr-4 text-gray-400">{event.timestamp ? new Date(event.timestamp).toLocaleString() : '—'}</td>
+                          <td className="py-3 pr-4 text-white">{event.action?.replace(/_/g, ' ')}</td>
+                          <td className="py-3 pr-4 text-gray-400">{event.userEmail}</td>
+                          <td className="py-3 pr-4 text-gray-400">{session?.location || 'Local'}</td>
+                          <td className="py-3 pr-4 text-gray-400">{session?.ip || '127.0.0.1'}</td>
+                          <td className="py-3 pr-4 text-gray-400">{details}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
                 {activityLog.length === 0 && (
-                  <p className="text-sm text-gray-500">No activity yet.</p>
+                  <p className="text-sm text-gray-500 mt-4">No activity yet.</p>
                 )}
               </div>
             </CardContent>

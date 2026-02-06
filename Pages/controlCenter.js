@@ -98,6 +98,13 @@ export default function ControlCenter() {
     }, {}),
     [orgs]
   );
+  const orgUserCounts = useMemo(() => {
+    return users.reduce((acc, item) => {
+      if (!item.orgId) return acc;
+      acc[item.orgId] = (acc[item.orgId] || 0) + 1;
+      return acc;
+    }, {});
+  }, [users]);
 
   const toggleFeature = async (key) => {
     if (!orgState) return;

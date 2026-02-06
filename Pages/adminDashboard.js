@@ -10,23 +10,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [org, setOrg] = useState(null);
+  const [ownerEmail, setOwnerEmail] = useState('');
   const queryClient = useQueryClient();
   const isOwner = user?.role === 'owner';
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const currentUser = await ironroot.auth.me();
-        if (!['admin', 'owner'].includes(currentUser.role)) {
-          window.location.href = '/login';
-        }
-        setUser(currentUser);
-        const currentOrg = await ironroot.auth.currentOrg();
-        setOrg(currentOrg);
-      } catch {
-        window.location.href = '/login';
-      }
-    };
+        const checkAuth = async () => {
+          try {
+            const currentUser = await ironroot.auth.me();
+            if (!['admin', 'owner'].includes(currentUser.role)) {
+              window.location.href = '/login';
+            }
+            setUser(currentUser);
+            const currentOrg = await ironroot.auth.currentOrg();
+            setOrg(currentOrg);
+            setOwnerEmail(currentOrg?.ownerEmail || '');
+          } catch {
+            window.location.href = '/login';
+          }
+        };
     checkAuth();
   }, []);
 

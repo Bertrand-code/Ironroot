@@ -231,7 +231,12 @@ export default function ControlCenter() {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-gray-300">
+                  <table className="w-full text-sm text-left text-gray-300 table-compact">
+                    <colgroup>
+                      <col style={{ width: '25%' }} />
+                      <col style={{ width: '45%' }} />
+                      <col style={{ width: '30%' }} />
+                    </colgroup>
                     <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
                       <tr>
                         <th className="py-3 pr-4">Field</th>
@@ -241,10 +246,15 @@ export default function ControlCenter() {
                     </thead>
                     <tbody className="divide-y divide-gray-800">
                       <tr>
-                        <td className="py-3 pr-4 text-gray-400">Owner Email</td>
-                        <td className="py-3 pr-4 text-white">{ownerEmail || orgState?.ownerEmail || user?.email}</td>
                         <td className="py-3 pr-4">
-                          <div className="flex flex-wrap gap-2">
+                          <span className="field-chip">Owner</span>
+                          <div className="text-xs text-gray-400 mt-1">Email responsible for approvals</div>
+                        </td>
+                        <td className="py-3 pr-4 text-white">
+                          {ownerEmail || orgState?.ownerEmail || user?.email}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="table__actions">
                             <Input
                               value={ownerEmail}
                               onChange={(e) => setOwnerEmail(e.target.value)}
@@ -256,13 +266,16 @@ export default function ControlCenter() {
                         </td>
                       </tr>
                       <tr>
-                        <td className="py-3 pr-4 text-gray-400">Security Policies</td>
+                        <td className="py-3 pr-4">
+                          <span className="field-chip">Security</span>
+                          <div className="text-xs text-gray-400 mt-1">Session timeout &amp; AI throttle</div>
+                        </td>
                         <td className="py-3 pr-4 text-gray-300">
-                          Session timeout: {orgState?.security?.sessionTimeoutMins || securityForm.sessionTimeoutMins}m ·
-                          AI requests/min: {orgState?.security?.aiRequestsPerMin || securityForm.aiRequestsPerMin}
+                          {orgState?.security?.sessionTimeoutMins || securityForm.sessionTimeoutMins}m session ·
+                          {orgState?.security?.aiRequestsPerMin || securityForm.aiRequestsPerMin} AI calls / min
                         </td>
                         <td className="py-3 pr-4">
-                          <div className="flex gap-2">
+                          <div className="table__actions">
                             <Input
                               type="number"
                               value={securityForm.sessionTimeoutMins}
@@ -277,12 +290,15 @@ export default function ControlCenter() {
                               className="bg-gray-900 border-gray-700 text-white"
                               style={{ width: '140px' }}
                             />
-                            <Button onClick={saveSecurity} className="bg-red-600 hover:bg-red-700">Save Policy</Button>
+                            <Button onClick={saveSecurity} className="bg-red-600 hover:bg-red-700">Save</Button>
                           </div>
                         </td>
                       </tr>
                       <tr>
-                        <td className="py-3 pr-4 text-gray-400">Organization Snapshot</td>
+                        <td className="py-3 pr-4">
+                          <span className="field-chip">Organization</span>
+                          <div className="text-xs text-gray-400 mt-1">Snapshot view</div>
+                        </td>
                         <td className="py-3 pr-4 text-gray-300">
                           {orgState?.name || 'Unknown'} · Plan {orgState?.plan || 'N/A'} · Users {users.length} · Admins {adminUsers.length}
                         </td>

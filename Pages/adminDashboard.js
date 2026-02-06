@@ -122,6 +122,7 @@ export default function AdminDashboard() {
   const criticalRisks = risks.filter((risk) => risk.severity === 'critical').length;
   const openRisks = risks.filter((risk) => risk.status === 'open').length;
   const publicAssets = assets.filter((asset) => asset.exposure === 'public').length;
+  const pendingAdminRequests = adminRequests.filter((request) => request.status === 'pending').length;
 
   const timeAgo = (value) => {
     if (!value) return 'just now';
@@ -257,9 +258,50 @@ contact@ironroot.com`
     );
   }
 
+  const ownerDisplay = ownerEmail || org?.ownerEmail || user?.email || 'owner@ironroot.ai';
+  const statCards = [
+    { label: 'Pending Requests', value: pendingAdminRequests, meta: 'Awaiting response', accent: 'text-yellow-300' },
+    { label: 'Total Users', value: users.length, meta: 'Across all orgs', accent: 'text-green-300' },
+    { label: 'Active Sessions', value: activeSessions.length, meta: 'Logged in now', accent: 'text-blue-300' },
+    { label: 'Critical Risks', value: criticalRisks, meta: 'Need attention', accent: 'text-red-300' },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6">
+        <div className="admin-nav">
+          <div>
+            <span className="admin-pill">Owner: {ownerDisplay}</span>
+          </div>
+          <div className="admin-nav__actions">
+            <Button variant="outline" onClick={() => (window.location.href = '/adminDashboard')}>
+              Admin Dashboard
+            </Button>
+            <Button variant="outline" onClick={() => (window.location.href = '/userManagement')}>
+              User Management
+            </Button>
+            <Button variant="outline" onClick={() => (window.location.href = '/assetInventory')}>
+              Asset Inventory
+            </Button>
+            <Button variant="outline" onClick={() => (window.location.href = '/riskRegister')}>
+              Risk Register
+            </Button>
+          </div>
+        </div>
+
+        <div className="stat-row">
+          {statCards.map((card) => (
+            <div key={card.label} className="stat-card">
+              <div className="stat-card__label">{card.label}</div>
+              <div className="stat-card__value">{card.value}</div>
+              <p className="stat-card__meta">
+                <span className={card.accent}>{card.meta}</span>
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <div className="admin-hero" style={{ marginBottom: '28px' }}>
         <div className="admin-hero" style={{ marginBottom: '28px' }}>
           <div>
             <span className="eyebrow">Operations Command</span>

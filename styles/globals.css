@@ -249,6 +249,83 @@ textarea {
   font-weight: 600;
 }
 
+.admin-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-nav__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.04), rgba(17, 24, 39, 0.9));
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  min-height: 120px;
+}
+
+.stat-card__label {
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.stat-card__value {
+  font-size: 2rem;
+  font-weight: 600;
+  margin: 10px 0 6px;
+  color: var(--text);
+}
+
+.stat-card__meta {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.table-compact th,
+.table-compact td {
+  padding: 12px 8px;
+  white-space: nowrap;
+}
+
+.table-compact tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.table-compact .table__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.table-compact .field-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+}
+
 .admin-toolbar {
   display: flex;
   flex-wrap: wrap;

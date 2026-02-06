@@ -68,6 +68,12 @@ export default function UserManagement() {
     enabled: !!user,
   });
 
+  const { data: sessions = [] } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: () => ironroot.entities.Session.list('-lastSeen'),
+    enabled: !!user,
+  });
+
   const orgMap = orgs.reduce((acc, orgItem) => {
     acc[orgItem.id] = orgItem.name;
     return acc;
@@ -215,6 +221,14 @@ export default function UserManagement() {
     u.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     u.fullName?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const latestSessionByUser = sessions.reduce((acc, session) => {
+    if (!session?.userId) return acc;
+    if (!acc[session.userId]) {
+      acc[session.userId] = session;
+    }
+    return acc;
+  }, {});
 
   if (!user) return null;
 
@@ -537,6 +551,47 @@ export default function UserManagement() {
             </div>
           </CardHeader>
           <CardContent>
+            <div className="overflow-x-auto mb-6">
+              <table className="w-full text-sm text-left text-gray-300">
+                <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                  <tr>
+                    <th className="py-3 pr-4">User</th>
+                    <th className="py-3 pr-4">Role</th>
+                    <th className="py-3 pr-4">Org</th>
+                    <th className="py-3 pr-4">Last Login</th>
+                    <th className="py-3 pr-4">IP</th>
+                    <th className="py-3 pr-4">Location</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {filteredUsers.map((u) => {
+                    const session = latestSessionByUser[u.id];
+                    return (
+                      <tr key={u.id}>
+                        <td className="py-3 pr-4">
+                          <div className="text-white">{u.email}</div>
+                          <div className="text-xs text-gray-500">{u.full_name || u.fullName || 'No name'}</div>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <Badge className={u.role === 'admin' ? 'bg-red-500' : u.role === 'owner' ? 'bg-purple-500' : 'bg-blue-500'}>
+                            {u.role}
+                          </Badge>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400">{orgMap[u.orgId] || 'Unassigned'}</td>
+                        <td className="py-3 pr-4 text-gray-400">
+                          {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString() : '—'}
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400">{session?.ip || u.lastLoginIp || '—'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{session?.location || u.lastLoginLocation || '—'}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {filteredUsers.length === 0 && (
+                <p className="text-sm text-gray-500 mt-4">No users match the current filter.</p>
+              )}
+            </div>
             <div className="space-y-3">
               {filteredUsers.map((u, index) => (
                 <motion.div

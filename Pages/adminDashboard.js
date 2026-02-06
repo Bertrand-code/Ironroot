@@ -214,6 +214,7 @@ contact@ironroot.com`
   };
 
   const approveAdminRequest = async (request) => {
+    if (user?.role !== 'owner') return;
     const userRecord = await ironroot.users.inviteUser(request.email, 'admin', user?.orgId || null);
     await ironroot.entities.AdminRequest.update(request.id, { status: 'approved' });
     await ironroot.entities.ActivityLog.create({

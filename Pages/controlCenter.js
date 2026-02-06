@@ -207,65 +207,79 @@ export default function ControlCenter() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid gap-8 mb-8">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <UserCheck className="h-5 w-5" />
-                  Ownership
+                  Ownership & Policies
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <Input
-                  value={ownerEmail}
-                  onChange={(e) => setOwnerEmail(e.target.value)}
-                  placeholder="Owner email"
-                  className="bg-gray-900 border-gray-700 text-white"
-                />
-                <Button onClick={saveOwnerEmail} className="bg-red-600 hover:bg-red-700">Update Owner Email</Button>
-                <p className="text-xs text-gray-500">Only this address can approve admin access requests.</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Security Policies
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Input
-                  type="number"
-                  value={securityForm.sessionTimeoutMins}
-                  onChange={(e) => setSecurityForm((prev) => ({ ...prev, sessionTimeoutMins: e.target.value }))}
-                  className="bg-gray-900 border-gray-700 text-white"
-                  placeholder="Session timeout (minutes)"
-                />
-                <Input
-                  type="number"
-                  value={securityForm.aiRequestsPerMin}
-                  onChange={(e) => setSecurityForm((prev) => ({ ...prev, aiRequestsPerMin: e.target.value }))}
-                  className="bg-gray-900 border-gray-700 text-white"
-                  placeholder="AI requests per minute"
-                />
-                <Button onClick={saveSecurity} className="bg-red-600 hover:bg-red-700">Save Security Policy</Button>
-                <p className="text-xs text-gray-500">Changes apply to new sessions immediately after save.</p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Organization Snapshot
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-gray-300">Org: {orgState?.name || 'Unknown'}</p>
-                <p className="text-sm text-gray-300">Plan: {orgState?.plan || 'N/A'}</p>
-                <p className="text-sm text-gray-300">Users: {users.length}</p>
-                <p className="text-sm text-gray-300">Admins: {adminUsers.length}</p>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                      <tr>
+                        <th className="py-3 pr-4">Field</th>
+                        <th className="py-3 pr-4">Value</th>
+                        <th className="py-3 pr-4">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      <tr>
+                        <td className="py-3 pr-4 text-gray-400">Owner Email</td>
+                        <td className="py-3 pr-4 text-white">{ownerEmail || orgState?.ownerEmail || user?.email}</td>
+                        <td className="py-3 pr-4">
+                          <div className="flex flex-wrap gap-2">
+                            <Input
+                              value={ownerEmail}
+                              onChange={(e) => setOwnerEmail(e.target.value)}
+                              className="bg-gray-900 border-gray-700 text-white"
+                              style={{ width: '220px' }}
+                            />
+                            <Button onClick={saveOwnerEmail} className="bg-red-600 hover:bg-red-700">Update</Button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 pr-4 text-gray-400">Security Policies</td>
+                        <td className="py-3 pr-4 text-gray-300">
+                          Session timeout: {orgState?.security?.sessionTimeoutMins || securityForm.sessionTimeoutMins}m ·
+                          AI requests/min: {orgState?.security?.aiRequestsPerMin || securityForm.aiRequestsPerMin}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              value={securityForm.sessionTimeoutMins}
+                              onChange={(e) => setSecurityForm((prev) => ({ ...prev, sessionTimeoutMins: e.target.value }))}
+                              className="bg-gray-900 border-gray-700 text-white"
+                              style={{ width: '120px' }}
+                            />
+                            <Input
+                              type="number"
+                              value={securityForm.aiRequestsPerMin}
+                              onChange={(e) => setSecurityForm((prev) => ({ ...prev, aiRequestsPerMin: e.target.value }))}
+                              className="bg-gray-900 border-gray-700 text-white"
+                              style={{ width: '140px' }}
+                            />
+                            <Button onClick={saveSecurity} className="bg-red-600 hover:bg-red-700">Save Policy</Button>
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="py-3 pr-4 text-gray-400">Organization Snapshot</td>
+                        <td className="py-3 pr-4 text-gray-300">
+                          {orgState?.name || 'Unknown'} · Plan {orgState?.plan || 'N/A'} · Users {users.length} · Admins {adminUsers.length}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <Button variant="ghost" onClick={() => (window.location.href = '/adminDashboard')}>Open Org</Button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">Owner email is required for admin approvals. Security policies apply immediately.</p>
               </CardContent>
             </Card>
           </div>
@@ -277,20 +291,35 @@ export default function ControlCenter() {
                 Feature Flags
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-2 gap-4">
-              {featureCatalog.map((feature) => (
-                <div key={feature.key} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-white font-semibold">{feature.label}</p>
-                      <p className="text-xs text-gray-500">{feature.description}</p>
-                    </div>
-                    <Button variant="ghost" onClick={() => toggleFeature(feature.key)}>
-                      {orgState?.features?.[feature.key] ? 'Disable' : 'Enable'}
-                    </Button>
-                  </div>
-                </div>
-              ))}
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Feature</th>
+                        <th className="py-3 pr-4">Description</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 pr-4">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {featureCatalog.map((feature) => (
+                      <tr key={feature.key}>
+                        <td className="py-3 pr-4 text-white">{feature.label}</td>
+                        <td className="py-3 pr-4 text-gray-400">{feature.description}</td>
+                        <td className="py-3 pr-4 text-gray-400">
+                          {orgState?.features?.[feature.key] ? 'Enabled' : 'Disabled'}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <Button variant="ghost" onClick={() => toggleFeature(feature.key)}>
+                            {orgState?.features?.[feature.key] ? 'Disable' : 'Enable'}
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
 
@@ -299,39 +328,59 @@ export default function ControlCenter() {
               <CardHeader>
                 <CardTitle className="text-white">Admin Access Requests</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {adminRequests.length === 0 && (
-                  <p className="text-sm text-gray-500">No pending admin access requests.</p>
-                )}
-                {adminRequests.map((request) => (
-                  <div key={request.id} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-white">{request.email}</p>
-                        <p className="text-xs text-gray-500">{request.reason}</p>
-                      </div>
-                      <Badge className={request.status === 'approved' ? 'bg-green-500' : request.status === 'denied' ? 'bg-red-500' : 'bg-yellow-500'}>
-                        {request.status || 'pending'}
-                      </Badge>
-                    </div>
-                    <div className="flex gap-2 mt-3">
-                      <Button
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={request.status !== 'pending'}
-                        onClick={() => approveAdmin(request)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        disabled={request.status !== 'pending'}
-                        onClick={() => denyAdmin(request)}
-                      >
-                        Deny
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                      <tr>
+                        <th className="py-3 pr-4">Requester</th>
+                        <th className="py-3 pr-4">Reason</th>
+                        <th className="py-3 pr-4">Requested By</th>
+                        <th className="py-3 pr-4">Status</th>
+                        <th className="py-3 pr-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {adminRequests.map((request) => (
+                        <tr key={request.id}>
+                          <td className="py-3 pr-4 text-white">
+                            <a href={`/userManagement?query=${encodeURIComponent(request.email)}`} className="underline">
+                              {request.email}
+                            </a>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-400">{request.reason || '—'}</td>
+                          <td className="py-3 pr-4 text-gray-400">{request.requestedBy || '—'}</td>
+                          <td className="py-3 pr-4">
+                            <Badge className={request.status === 'approved' ? 'bg-green-500' : request.status === 'denied' ? 'bg-red-500' : 'bg-yellow-500'}>
+                              {request.status || 'pending'}
+                            </Badge>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <div className="flex gap-2">
+                              <Button
+                                className="bg-green-600 hover:bg-green-700"
+                                disabled={request.status !== 'pending'}
+                                onClick={() => approveAdmin(request)}
+                              >
+                                Approve
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                disabled={request.status !== 'pending'}
+                                onClick={() => denyAdmin(request)}
+                              >
+                                Deny
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {adminRequests.length === 0 && (
+                    <p className="text-sm text-gray-500 mt-4">No requests available.</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
@@ -339,22 +388,40 @@ export default function ControlCenter() {
               <CardHeader>
                 <CardTitle className="text-white">Admin Roster</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {adminUsers.map((admin) => (
-                  <div key={admin.id} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-white">{admin.email}</p>
-                      <p className="text-xs text-gray-500">Role: {admin.role}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      disabled={admin.role === 'owner'}
-                      onClick={() => revokeAdmin(admin)}
-                    >
-                      Revoke
-                    </Button>
-                  </div>
-                ))}
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                      <tr>
+                        <th className="py-3 pr-4">Admin</th>
+                        <th className="py-3 pr-4">Role</th>
+                        <th className="py-3 pr-4">Org</th>
+                        <th className="py-3 pr-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {adminUsers.map((admin) => (
+                        <tr key={admin.id}>
+                          <td className="py-3 pr-4 text-white">{admin.email}</td>
+                          <td className="py-3 pr-4 text-gray-400">{admin.role}</td>
+                          <td className="py-3 pr-4 text-gray-400">{orgMap[admin.orgId] || '—'}</td>
+                          <td className="py-3 pr-4">
+                            <Button
+                              variant="ghost"
+                              disabled={admin.role === 'owner'}
+                              onClick={() => revokeAdmin(admin)}
+                            >
+                              Revoke
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {adminUsers.length === 0 && (
+                    <p className="text-sm text-gray-500 mt-4">No admin users found.</p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -363,14 +430,35 @@ export default function ControlCenter() {
             <CardHeader>
               <CardTitle className="text-white">Company Accounts</CardTitle>
             </CardHeader>
-            <CardContent className="grid md:grid-cols-3 gap-4">
-              {orgs.map((company) => (
-                <div key={company.id} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-                  <p className="text-white font-semibold">{company.name}</p>
-                  <p className="text-xs text-gray-500">Plan: {company.plan}</p>
-                  <p className="text-xs text-gray-500">Owner: {company.ownerEmail || 'Unassigned'}</p>
-                </div>
-              ))}
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Company</th>
+                      <th className="py-3 pr-4">Plan</th>
+                      <th className="py-3 pr-4">Owner</th>
+                      <th className="py-3 pr-4">Users</th>
+                      <th className="py-3 pr-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {orgs.map((company) => (
+                      <tr key={company.id}>
+                        <td className="py-3 pr-4 text-white">{company.name}</td>
+                        <td className="py-3 pr-4 text-gray-400">{company.plan}</td>
+                        <td className="py-3 pr-4 text-gray-400">{company.ownerEmail || 'Unassigned'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{orgUserCounts[company.id] || 0}</td>
+                        <td className="py-3 pr-4">
+                          <Button variant="ghost" onClick={() => (window.location.href = `/userManagement?org=${company.id}`)}>
+                            Manage
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </AuthGate>

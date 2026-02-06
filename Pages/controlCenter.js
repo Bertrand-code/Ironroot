@@ -91,6 +91,13 @@ export default function ControlCenter() {
     () => adminRequests.filter((request) => request.status === 'pending').length,
     [adminRequests]
   );
+  const orgMap = useMemo(
+    () => orgs.reduce((acc, orgItem) => {
+      acc[orgItem.id] = orgItem.name;
+      return acc;
+    }, {}),
+    [orgs]
+  );
 
   const toggleFeature = async (key) => {
     if (!orgState) return;

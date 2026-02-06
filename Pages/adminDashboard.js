@@ -304,7 +304,6 @@ contact@ironroot.com`
         </div>
 
         <div className="admin-hero" style={{ marginBottom: '28px' }}>
-        <div className="admin-hero" style={{ marginBottom: '28px' }}>
           <div>
             <span className="eyebrow">Operations Command</span>
             <h1 className="title-lg">Admin Command Center</h1>

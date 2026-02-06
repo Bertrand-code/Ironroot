@@ -26,6 +26,7 @@ export default function UserManagement() {
     name: '',
     description: '',
   });
+  const [requestFilter, setRequestFilter] = useState('pending');
   const queryClient = useQueryClient();
   const canManageAdmins = user?.role === 'owner';
 
@@ -230,6 +231,19 @@ export default function UserManagement() {
     return acc;
   }, {});
 
+  const filteredRequests = adminRequests.filter((request) => {
+    if (requestFilter === 'all') return true;
+    return (request.status || 'pending') === requestFilter;
+  });
+
+  const refreshData = () => {
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+    queryClient.invalidateQueries({ queryKey: ['orgs'] });
+    queryClient.invalidateQueries({ queryKey: ['groups'] });
+    queryClient.invalidateQueries({ queryKey: ['adminRequests'] });
+    queryClient.invalidateQueries({ queryKey: ['sessions'] });
+  };
+
   if (!user) return null;
 
   return (
@@ -319,6 +333,10 @@ export default function UserManagement() {
               <UserPlus className="h-5 w-5" />
               Invite New User
             </CardTitle>
+            <div className="admin-toolbar">
+              <Button variant="outline" onClick={refreshData}>Refresh Data</Button>
+              <span className="card__meta">Admin requests: {adminRequests.length}</span>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-6 gap-4">
@@ -489,48 +507,81 @@ export default function UserManagement() {
 
         <Card className="bg-gray-800 border-gray-700 mb-8">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Admin Access Requests
-            </CardTitle>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <CardTitle className="text-white flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                Admin Access Requests
+              </CardTitle>
+              <select
+                className="select"
+                value={requestFilter}
+                onChange={(e) => setRequestFilter(e.target.value)}
+              >
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="denied">Denied</option>
+                <option value="all">All</option>
+              </select>
+            </div>
           </CardHeader>
           <CardContent>
-            {adminRequests.length === 0 ? (
-              <p className="text-sm text-gray-400">No pending admin requests.</p>
-            ) : (
-              <div className="space-y-3">
-                {adminRequests.map((req) => (
-                  <div key={req.id} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                    <div>
-                      <p className="text-sm text-white">{req.email}</p>
-                      <p className="text-xs text-gray-500">{req.reason}</p>
-                      <Badge className={req.status === 'approved' ? 'bg-green-500' : req.status === 'denied' ? 'bg-red-500' : 'bg-yellow-500'}>
-                        {req.status || 'pending'}
-                      </Badge>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        className="bg-green-600 hover:bg-green-700"
-                        disabled={!canManageAdmins || req.status !== 'pending'}
-                        onClick={() => approveAdminRequestMutation.mutate(req)}
-                      >
-                        Approve
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        disabled={!canManageAdmins || req.status !== 'pending'}
-                        onClick={() => denyAdminRequestMutation.mutate(req)}
-                      >
-                        Deny
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-                {!canManageAdmins && (
-                  <p className="text-xs text-gray-500">Only the owner can approve admin access.</p>
-                )}
-              </div>
-            )}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-300">
+                <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                  <tr>
+                    <th className="py-3 pr-4">Requester</th>
+                    <th className="py-3 pr-4">Reason</th>
+                    <th className="py-3 pr-4">Org</th>
+                    <th className="py-3 pr-4">Requested By</th>
+                    <th className="py-3 pr-4">Status</th>
+                    <th className="py-3 pr-4">Requested</th>
+                    <th className="py-3 pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {filteredRequests.map((req) => (
+                    <tr key={req.id}>
+                      <td className="py-3 pr-4 text-white">{req.email}</td>
+                      <td className="py-3 pr-4 text-gray-400">{req.reason || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{orgMap[req.orgId] || 'Unassigned'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{req.requestedBy || '—'}</td>
+                      <td className="py-3 pr-4">
+                        <Badge className={req.status === 'approved' ? 'bg-green-500' : req.status === 'denied' ? 'bg-red-500' : 'bg-yellow-500'}>
+                          {req.status || 'pending'}
+                        </Badge>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-400">
+                        {req.created_date ? new Date(req.created_date).toLocaleString() : '—'}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <div className="flex gap-2">
+                          <Button
+                            className="bg-green-600 hover:bg-green-700"
+                            disabled={!canManageAdmins || req.status !== 'pending'}
+                            onClick={() => approveAdminRequestMutation.mutate(req)}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            disabled={!canManageAdmins || req.status !== 'pending'}
+                            onClick={() => denyAdminRequestMutation.mutate(req)}
+                          >
+                            Deny
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {filteredRequests.length === 0 && (
+                <p className="text-sm text-gray-500 mt-4">No admin requests in this view.</p>
+              )}
+              {!canManageAdmins && (
+                <p className="text-xs text-gray-500 mt-3">Only the owner can approve admin access.</p>
+              )}
+            </div>
           </CardContent>
         </Card>
 

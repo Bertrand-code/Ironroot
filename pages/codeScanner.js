@@ -157,6 +157,7 @@ export default function CodeScanner() {
     return {
       target,
       mode,
+      generatedAt: new Date().toISOString(),
       summary,
       vulnerabilities: allFindings,
       coverage: [
@@ -431,6 +432,15 @@ export default function CodeScanner() {
     return colors[severity?.toLowerCase()] || colors.low;
   };
 
+  const getScanModeLabel = (mode) => {
+    const mapping = {
+      file: 'File Upload',
+      github_repository: 'GitHub Repository',
+      website: 'Website',
+    };
+    return mapping[mode] || 'Security Scan';
+  };
+
   const toggleVulnExpansion = (index) => {
     setExpandedVulns(prev => ({
       ...prev,
@@ -439,6 +449,11 @@ export default function CodeScanner() {
   };
 
   const heatmap = scanResults ? buildHeatmap(scanResults.vulnerabilities) : null;
+  const repoSummary = scanResults?.repoSummary;
+  const repoPages = repoSummary?.pages || [];
+  const repoRoutes = repoSummary?.apiRoutes || [];
+  const repoComponents = repoSummary?.components || [];
+  const repoFiles = repoSummary?.files || [];
   const timeline = scanResults
     ? [
         { label: 'Queued', time: '00:00', status: 'done' },
@@ -743,256 +758,297 @@ export default function CodeScanner() {
               </Card>
             </div>
 
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Vulnerabilities Found ({scanResults.vulnerabilities?.length || 0})
-              </h2>
-              {scanResults.repoSummary && (
-                <Card className="bg-gray-800 border-gray-700 mb-6">
+            <div className="space-y-6">
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Scan Intelligence</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="table w-full text-sm text-left text-gray-300">
+                      <tbody className="divide-y divide-gray-800">
+                        <tr>
+                          <td className="py-3 pr-4 text-gray-400">Target</td>
+                          <td className="py-3 text-white">{scanResults.target || '—'}</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 text-gray-400">Scan Type</td>
+                          <td className="py-3 text-gray-300">{getScanModeLabel(scanResults.mode)}</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 text-gray-400">Coverage</td>
+                          <td className="py-3">
+                            <div className="flex flex-wrap gap-2">
+                              {(scanResults.coverage || []).map((item) => (
+                                <Badge key={item} variant="outline" className="text-xs border-gray-600 text-gray-300">
+                                  {item}
+                                </Badge>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 text-gray-400">Semgrep Cloud</td>
+                          <td className="py-3 text-gray-300">
+                            {scanResults.semgrep?.deploymentId ? (
+                              <span>Deployment {scanResults.semgrep.deploymentId}</span>
+                            ) : (
+                              <span>Not configured</span>
+                            )}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 text-gray-400">Semgrep Findings</td>
+                          <td className="py-3 text-gray-300">
+                            {semgrepLoading ? 'Fetching...' : scanResults.semgrep?.findings ?? '—'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 text-gray-400">Generated</td>
+                          <td className="py-3 text-gray-300">
+                            {scanResults.generatedAt ? new Date(scanResults.generatedAt).toLocaleString() : '—'}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 pr-4 text-gray-400">Requested By</td>
+                          <td className="py-3 text-gray-300">{user?.email || '—'}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {repoSummary && (
+                <Card className="bg-gray-800 border-gray-700">
                   <CardHeader>
                     <CardTitle className="text-white">Repository Insights</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    {scanResults.repoSummary.overview && (
-                      <p className="text-sm text-gray-400 mb-6">
-                        {scanResults.repoSummary.overview}
-                      </p>
+                    {repoSummary.overview && (
+                      <p className="text-sm text-gray-400 mb-6">{repoSummary.overview}</p>
                     )}
-                    <div className="grid md:grid-cols-3 gap-6">
-                      <div>
-                        <p className="text-sm text-gray-400 mb-3">Pages & Routes</p>
-                        <div className="space-y-2">
-                          {scanResults.repoSummary.pages.map((page) => (
-                            <div key={page.path} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                              <div className="text-sm text-white">{page.path}</div>
-                              <div className="text-xs text-gray-500 mt-1">Findings: {page.findings}</div>
-                            </div>
-                          ))}
-                          {scanResults.repoSummary.apiRoutes.map((route) => (
-                            <div key={route.path} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                              <div className="text-xs text-gray-400">API Route</div>
-                              <div className="text-sm text-white">{route.path}</div>
-                              <div className="text-xs text-gray-500 mt-1">Findings: {route.findings}</div>
-                            </div>
-                          ))}
+                    <div className="grid lg:grid-cols-2 gap-6">
+                      <div className="bg-gray-900/60 border border-gray-700 rounded-lg p-4">
+                        <div className="text-sm text-gray-300 mb-3">Pages & API Routes</div>
+                        <div className="overflow-x-auto">
+                          <table className="table w-full text-xs text-left text-gray-400">
+                            <thead className="text-[10px] uppercase text-gray-500 border-b border-gray-700">
+                              <tr>
+                                <th className="py-2 pr-3">Type</th>
+                                <th className="py-2 pr-3">Path</th>
+                                <th className="py-2 pr-3">Findings</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                              {[...repoPages.map((page) => ({ ...page, kind: 'Page' })), ...repoRoutes.map((route) => ({ ...route, kind: 'API Route' }))].map((row) => (
+                                <tr key={`${row.kind}-${row.path}`}>
+                                  <td className="py-2 pr-3 text-gray-300">{row.kind}</td>
+                                  <td className="py-2 pr-3 text-white">{row.path}</td>
+                                  <td className="py-2 pr-3 text-gray-400">{row.findings}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-400 mb-3">Components & Services</p>
-                        <div className="space-y-2">
-                          {scanResults.repoSummary.components.map((component) => (
-                            <div key={component.name} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-white">{component.name}</span>
-                                <span className="text-xs text-gray-400">
-                                  {component.critical + component.high + component.medium + component.low} findings
-                                </span>
-                              </div>
-                              <div className="mt-2 flex flex-wrap gap-2 text-xs">
-                                {component.critical > 0 && <Badge className="bg-red-500">C{component.critical}</Badge>}
-                                {component.high > 0 && <Badge className="bg-orange-500">H{component.high}</Badge>}
-                                {component.medium > 0 && <Badge className="bg-yellow-500">M{component.medium}</Badge>}
-                                {component.low > 0 && <Badge className="bg-blue-500">L{component.low}</Badge>}
-                              </div>
-                            </div>
-                          ))}
+                      <div className="bg-gray-900/60 border border-gray-700 rounded-lg p-4">
+                        <div className="text-sm text-gray-300 mb-3">Components & Services</div>
+                        <div className="overflow-x-auto">
+                          <table className="table w-full text-xs text-left text-gray-400">
+                            <thead className="text-[10px] uppercase text-gray-500 border-b border-gray-700">
+                              <tr>
+                                <th className="py-2 pr-3">Component</th>
+                                <th className="py-2 pr-3">C</th>
+                                <th className="py-2 pr-3">H</th>
+                                <th className="py-2 pr-3">M</th>
+                                <th className="py-2 pr-3">L</th>
+                                <th className="py-2 pr-3">Total</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                              {repoComponents.map((component) => {
+                                const total = component.critical + component.high + component.medium + component.low;
+                                return (
+                                  <tr key={component.name}>
+                                    <td className="py-2 pr-3 text-white">{component.name}</td>
+                                    <td className="py-2 pr-3 text-red-400">{component.critical}</td>
+                                    <td className="py-2 pr-3 text-orange-400">{component.high}</td>
+                                    <td className="py-2 pr-3 text-yellow-400">{component.medium}</td>
+                                    <td className="py-2 pr-3 text-blue-400">{component.low}</td>
+                                    <td className="py-2 pr-3 text-gray-300">{total}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
-                      <div>
-                        <p className="text-sm text-gray-400 mb-3">File Overview</p>
-                        <div className="space-y-2">
-                          {scanResults.repoSummary.files.map((file) => (
-                            <div key={file.path} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                              <div className="text-xs text-gray-400">{file.type}</div>
-                              <div className="text-sm text-white">{file.path}</div>
-                              <div className="text-xs text-gray-500 mt-1">Findings: {file.findings}</div>
-                            </div>
-                          ))}
+                      <div className="bg-gray-900/60 border border-gray-700 rounded-lg p-4 lg:col-span-2">
+                        <div className="text-sm text-gray-300 mb-3">File Overview</div>
+                        <div className="overflow-x-auto">
+                          <table className="table w-full text-xs text-left text-gray-400">
+                            <thead className="text-[10px] uppercase text-gray-500 border-b border-gray-700">
+                              <tr>
+                                <th className="py-2 pr-3">Path</th>
+                                <th className="py-2 pr-3">Type</th>
+                                <th className="py-2 pr-3">Findings</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                              {repoFiles.map((file) => (
+                                <tr key={file.path}>
+                                  <td className="py-2 pr-3 text-white">{file.path}</td>
+                                  <td className="py-2 pr-3 text-gray-400">{file.type}</td>
+                                  <td className="py-2 pr-3 text-gray-400">{file.findings}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               )}
-              {scanResults.vulnerabilities?.length > 0 ? (
-                <div className="space-y-4">
+
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">
+                    Findings ({scanResults.vulnerabilities?.length || 0})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                   {!hasAccess && (
-                    <Alert className="bg-yellow-500/10 border-yellow-500">
+                    <Alert className="bg-yellow-500/10 border-yellow-500 mb-4">
                       <AlertDescription className="text-yellow-400">
                         🔒 Limited access - Start a free trial to view full vulnerability details, remediation steps, and code examples.
                       </AlertDescription>
                     </Alert>
                   )}
-                  {scanResults.vulnerabilities.map((vuln, index) => {
-                    const colors = getSeverityColor(vuln.severity);
-                    const isExpanded = expandedVulns[index];
-                    return (
-                      <Card key={index} className="bg-gray-800 border-gray-700 overflow-hidden">
-                        {/* Collapsed Header - Always Visible */}
-                        <div 
-                          className="p-6 cursor-pointer hover:bg-gray-750 transition-colors"
-                          onClick={() => hasAccess && toggleVulnExpansion(index)}
-                        >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-3 flex-1">
-                              <AlertTriangle className={`h-6 w-6 ${colors.text} flex-shrink-0 mt-0.5`} />
-                              <div className="flex-1">
-                                <div className="flex items-start justify-between gap-2">
-                                  <h3 className="font-bold text-white text-lg">{vuln.title}</h3>
-                                  <Badge className={`${colors.bg} ${colors.text} border ${colors.border} flex-shrink-0`}>
-                                    {vuln.severity?.toUpperCase()}
-                                  </Badge>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {vuln.cwe_id && (
-                                    <Badge variant="outline" className="text-xs border-blue-500 text-blue-400">
-                                      {vuln.cwe_id}
+                  {scanResults.vulnerabilities?.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="table w-full text-sm text-left text-gray-300">
+                        <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                          <tr>
+                            <th className="py-3 pr-4">Severity</th>
+                            <th className="py-3 pr-4">Finding</th>
+                            <th className="py-3 pr-4">Category</th>
+                            <th className="py-3 pr-4">Location</th>
+                            <th className="py-3 pr-4">Rule / CVE</th>
+                            <th className="py-3 pr-4">Source</th>
+                            <th className="py-3 pr-4">Details</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800">
+                          {scanResults.vulnerabilities.map((vuln, index) => {
+                            const colors = getSeverityColor(vuln.severity);
+                            const isExpanded = expandedVulns[index];
+                            const location = vuln.filePath
+                              ? `${vuln.filePath}${vuln.lineNumber ? `:${vuln.lineNumber}` : ''}`
+                              : vuln.component || '—';
+                            const rule = vuln.ruleId || vuln.cve_id || vuln.cwe_id || '—';
+                            const source = vuln.source || vuln.category || 'Ironroot';
+                            return (
+                              <React.Fragment key={`${vuln.title}-${index}`}>
+                                <tr className="hover:bg-gray-800/60">
+                                  <td className="py-3 pr-4">
+                                    <Badge className={`${colors.bg} ${colors.text} border ${colors.border}`}>
+                                      {vuln.severity?.toUpperCase()}
                                     </Badge>
-                                  )}
-                                  {vuln.cve_id && (
-                                    <Badge variant="outline" className="text-xs border-purple-500 text-purple-400">
-                                      {vuln.cve_id}
-                                    </Badge>
-                                  )}
-                                  {vuln.owasp_category && (
-                                    <Badge variant="outline" className="text-xs border-orange-500 text-orange-400">
-                                      OWASP: {vuln.owasp_category}
-                                    </Badge>
-                                  )}
-                                  {vuln.ruleId && (
-                                    <Badge variant="outline" className="text-xs border-green-500 text-green-400">
-                                      {vuln.ruleId}
-                                    </Badge>
-                                  )}
-                                  {vuln.filePath && (
-                                    <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
-                                      {vuln.filePath}
-                                    </Badge>
-                                  )}
-                                  {(vuln.component || vuln.currentVersion) && (
-                                    <Badge variant="outline" className="text-xs border-gray-500 text-gray-400">
-                                      {vuln.component} {vuln.currentVersion}
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-sm text-gray-400 mt-3 line-clamp-2">
-                                  {hasAccess ? vuln.description : 'Full details available with trial or paid access'}
-                                </p>
-                              </div>
-                            </div>
-                            {hasAccess && (
-                              <Button variant="ghost" size="sm" className="flex-shrink-0">
-                                {isExpanded ? (
-                                  <ChevronUp className="h-5 w-5 text-gray-400" />
-                                ) : (
-                                  <ChevronDown className="h-5 w-5 text-gray-400" />
+                                  </td>
+                                  <td className="py-3 pr-4 text-white">{vuln.title}</td>
+                                  <td className="py-3 pr-4 text-gray-400">{vuln.category || 'General'}</td>
+                                  <td className="py-3 pr-4 text-gray-400">{location}</td>
+                                  <td className="py-3 pr-4 text-gray-400">{rule}</td>
+                                  <td className="py-3 pr-4 text-gray-400">{source}</td>
+                                  <td className="py-3 pr-4">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      disabled={!hasAccess}
+                                      onClick={() => hasAccess && toggleVulnExpansion(index)}
+                                    >
+                                      {isExpanded ? 'Hide' : 'View'}
+                                    </Button>
+                                  </td>
+                                </tr>
+                                {isExpanded && hasAccess && (
+                                  <tr className="bg-gray-900/60">
+                                    <td colSpan={7} className="py-4 px-4">
+                                      <div className="grid md:grid-cols-2 gap-4">
+                                        <div className={`${colors.bg} p-4 rounded-lg border ${colors.border}`}>
+                                          <p className="text-sm font-medium text-gray-200 mb-2">Detailed Analysis</p>
+                                          <p className="text-sm text-gray-300 whitespace-pre-wrap">{vuln.description}</p>
+                                          {vuln.lineNumber && (
+                                            <p className="text-xs text-gray-500 mt-2">Location: Line {vuln.lineNumber}</p>
+                                          )}
+                                        </div>
+                                        <div className="bg-green-500/5 p-4 rounded-lg border border-green-500/20">
+                                          <p className="text-sm font-medium text-green-400 mb-2">Remediation</p>
+                                          <p className="text-sm text-gray-300 whitespace-pre-wrap">{vuln.remediation || vuln.recommendation}</p>
+                                          {vuln.fixedVersion && (
+                                            <div className="mt-3 p-2 bg-green-500/10 rounded border border-green-500/30">
+                                              <p className="text-xs text-green-400">
+                                                Upgrade to: {vuln.fixedVersion}
+                                              </p>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {vuln.affectedCode && (
+                                        <div className="bg-gray-900 p-4 rounded-lg border border-gray-700 mt-4">
+                                          <p className="text-sm font-medium text-gray-300 mb-2">Vulnerable Code</p>
+                                          <pre className="text-xs text-red-400 overflow-x-auto font-mono">
+                                            <code>{vuln.affectedCode}</code>
+                                          </pre>
+                                        </div>
+                                      )}
+                                      {vuln.secureCodeExample && (
+                                        <div className="bg-gray-900 p-4 rounded-lg border border-green-500/30 mt-4">
+                                          <p className="text-sm font-medium text-green-400 mb-2">Secure Code Example</p>
+                                          <pre className="text-xs text-green-300 overflow-x-auto font-mono">
+                                            <code>{vuln.secureCodeExample}</code>
+                                          </pre>
+                                        </div>
+                                      )}
+                                      {vuln.references && vuln.references.length > 0 && (
+                                        <div className="bg-gray-900/50 p-4 rounded-lg mt-4">
+                                          <p className="text-sm font-medium text-gray-300 mb-2">References</p>
+                                          <div className="space-y-2">
+                                            {vuln.references.map((ref, refIdx) => (
+                                              <a
+                                                key={refIdx}
+                                                href={ref}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 hover:underline"
+                                              >
+                                                <ExternalLink className="h-3 w-3" />
+                                                <span className="break-all">{ref}</span>
+                                              </a>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </td>
+                                  </tr>
                                 )}
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Expanded Details */}
-                        <AnimatePresence>
-                          {isExpanded && hasAccess && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3 }}
-                            >
-                              <CardContent className="pt-0 pb-6 space-y-4 border-t border-gray-700">
-                                {/* Full Description */}
-                                <div className={`${colors.bg} p-4 rounded-lg border ${colors.border}`}>
-                                  <p className="text-sm font-medium text-gray-200 mb-2">📋 Detailed Analysis</p>
-                                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{vuln.description}</p>
-                                  {vuln.lineNumber && (
-                                    <p className="text-xs text-gray-500 mt-2">📍 Location: Line {vuln.lineNumber}</p>
-                                  )}
-                                </div>
-
-                                {/* Affected Code */}
-                                {vuln.affectedCode && (
-                                  <div className="bg-gray-900 p-4 rounded-lg border border-gray-700">
-                                    <p className="text-sm font-medium text-gray-300 mb-2">💥 Vulnerable Code</p>
-                                    <pre className="text-xs text-red-400 overflow-x-auto font-mono">
-                                      <code>{vuln.affectedCode}</code>
-                                    </pre>
-                                  </div>
-                                )}
-
-                                {/* Attack Scenario */}
-                                {vuln.attackScenario && (
-                                  <div className="bg-red-500/5 p-4 rounded-lg border border-red-500/20">
-                                    <p className="text-sm font-medium text-red-400 mb-2 flex items-center gap-2">
-                                      ⚠️ Attack Scenario
-                                    </p>
-                                    <p className="text-sm text-gray-300 whitespace-pre-wrap">{vuln.attackScenario}</p>
-                                  </div>
-                                )}
-
-                                {/* Remediation */}
-                                <div className="bg-green-500/5 p-4 rounded-lg border border-green-500/20">
-                                  <p className="text-sm font-medium text-green-400 mb-2 flex items-center gap-2">
-                                    ✅ Remediation Steps
-                                  </p>
-                                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{vuln.remediation || vuln.recommendation}</p>
-                                  {vuln.fixedVersion && (
-                                    <div className="mt-3 p-2 bg-green-500/10 rounded border border-green-500/30">
-                                      <p className="text-xs text-green-400">
-                                        🔧 <strong>Upgrade to:</strong> {vuln.fixedVersion}
-                                      </p>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Secure Code Example */}
-                                {vuln.secureCodeExample && (
-                                  <div className="bg-gray-900 p-4 rounded-lg border border-green-500/30">
-                                    <p className="text-sm font-medium text-green-400 mb-2">✨ Secure Code Example</p>
-                                    <pre className="text-xs text-green-300 overflow-x-auto font-mono">
-                                      <code>{vuln.secureCodeExample}</code>
-                                    </pre>
-                                  </div>
-                                )}
-
-                                {/* References */}
-                                {vuln.references && vuln.references.length > 0 && (
-                                  <div className="bg-gray-900/50 p-4 rounded-lg">
-                                    <p className="text-sm font-medium text-gray-300 mb-2">🔗 References & Resources</p>
-                                    <div className="space-y-2">
-                                      {vuln.references.map((ref, refIdx) => (
-                                        <a
-                                          key={refIdx}
-                                          href={ref}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 hover:underline"
-                                        >
-                                          <ExternalLink className="h-3 w-3" />
-                                          <span className="break-all">{ref}</span>
-                                        </a>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </CardContent>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </Card>
-                    );
-                  })}
-                </div>
-              ) : (
-                <Card className="bg-gray-800/50 border-gray-700">
-                  <CardContent className="py-12 text-center">
-                    <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                    <p className="text-gray-300 text-lg mb-2">No Vulnerabilities Detected</p>
-                    <p className="text-gray-500 text-sm">Your code passed the security scan successfully!</p>
-                  </CardContent>
-                </Card>
-              )}
+                              </React.Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="py-10 text-center">
+                      <CheckCircle className="h-14 w-14 text-green-500 mx-auto mb-4" />
+                      <p className="text-gray-300 text-lg mb-2">No Vulnerabilities Detected</p>
+                      <p className="text-gray-500 text-sm">Your code passed the security scan successfully!</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </motion.div>
         )}

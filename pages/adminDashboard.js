@@ -86,6 +86,18 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
 
+  const { data: documents = [] } = useQuery({
+    queryKey: ['documents', org?.id],
+    queryFn: () => ironroot.integrations.Vault.listDocuments({ orgId: org?.id }),
+    enabled: !!user && !!org?.id,
+  });
+
+  const { data: watermarkEvents = [] } = useQuery({
+    queryKey: ['watermarkEvents', org?.id],
+    queryFn: () => ironroot.integrations.Forensics.events({ orgId: org?.id, limit: 20 }),
+    enabled: !!user && !!org?.id,
+  });
+
   const { data: assets = [] } = useQuery({
     queryKey: ['assets'],
     queryFn: () => ironroot.entities.Asset.list('-lastSeen'),
@@ -113,6 +125,13 @@ export default function AdminDashboard() {
     acc[groupItem.id] = groupItem.name;
     return acc;
   }, {});
+
+  const documentMap = documents.reduce((acc, doc) => {
+    acc[doc.id] = doc.filename;
+    return acc;
+  }, {});
+
+  const quarantinedDocs = documents.filter((doc) => doc.quarantined);
 
   const activeSessions = sessions.filter((session) => session.status === 'active');
   const orgUserCounts = users.reduce((acc, userItem) => {
@@ -633,6 +652,94 @@ contact@ironroot.com`
                 </table>
                 {activityLog.length === 0 && (
                   <p className="text-sm text-gray-500 mt-4">No activity yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-8 mb-10">
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Forensic Watermark Events</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Time</th>
+                      <th className="py-3 pr-4">Forensic ID</th>
+                      <th className="py-3 pr-4">Document</th>
+                      <th className="py-3 pr-4">User</th>
+                      <th className="py-3 pr-4">Org</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {watermarkEvents.map((event) => (
+                      <tr key={event.id}>
+                        <td className="py-3 pr-4 text-gray-400">
+                          {event.downloadedAt ? new Date(event.downloadedAt).toLocaleString() : '—'}
+                        </td>
+                        <td className="py-3 pr-4 text-white">
+                          <a className="underline" href="/documentVault" title={event.watermarkId}>
+                            {event.forensicId || '—'}
+                          </a>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400">
+                          {documentMap[event.documentId] || '—'}
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400">{event.userEmail || '—'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{orgMap[event.orgId] || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {watermarkEvents.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-4">No watermarked downloads yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Quarantined Documents</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Document</th>
+                      <th className="py-3 pr-4">Verdict</th>
+                      <th className="py-3 pr-4">SHA-256</th>
+                      <th className="py-3 pr-4">Owner</th>
+                      <th className="py-3 pr-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {quarantinedDocs.slice(0, 8).map((doc) => (
+                      <tr key={doc.id}>
+                        <td className="py-3 pr-4 text-white">{doc.filename}</td>
+                        <td className="py-3 pr-4">
+                          <Badge className="bg-red-500">quarantined</Badge>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400" title={doc.docHash}>
+                          {doc.docHash ? `${doc.docHash.slice(0, 10)}…${doc.docHash.slice(-8)}` : '—'}
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400">{doc.createdByEmail || '—'}</td>
+                        <td className="py-3 pr-4">
+                          <Button variant="ghost" onClick={() => (window.location.href = '/documentVault')}>
+                            Review
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {quarantinedDocs.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-4">No quarantined documents.</p>
                 )}
               </div>
             </CardContent>

@@ -18,6 +18,7 @@ const pageMap = {
   AssetInventory: '/assetInventory',
   RiskRegister: '/riskRegister',
   ControlCenter: '/controlCenter',
+  DocumentVault: '/documentVault',
 };
 
 export const createPageUrl = (pageName) => {

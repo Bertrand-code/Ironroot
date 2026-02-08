@@ -44,6 +44,13 @@ const platforms = [
     features: ['Risk Ownership', 'Mitigation Tracking', 'Executive Views', 'Acceptance Workflow'],
     link: '/RiskRegister'
   },
+  {
+    icon: Shield,
+    title: 'Document Vault & Forensics',
+    description: 'Sandbox documents, apply forensic watermarking on download, and investigate leaks with “who did it” verification.',
+    features: ['Sandbox Uploads', 'Forensic Watermarks', 'Download Policies', 'Leak Investigations'],
+    link: '/DocumentVault'
+  },
 ];
 
 export default function Platform() {

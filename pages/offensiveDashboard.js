@@ -16,7 +16,6 @@ export default function OffensiveDashboard() {
   const [pentestTarget, setPentestTarget] = useState('https://app.customer.com');
   const [pentestResult, setPentestResult] = useState(null);
   const [pentestLoading, setPentestLoading] = useState(false);
-
   useEffect(() => {
     const loadStatus = async () => {
       const status = await ironroot.integrations.External.status();
@@ -143,6 +142,33 @@ export default function OffensiveDashboard() {
       remediation: 'Implement proper authorization checks, use indirect reference maps, validate user permissions on every request, and employ UUIDs instead of sequential IDs.'
     },
   ];
+
+  const pentestTimeline = [
+    { phase: 'Recon', status: 'Complete', owner: 'AI Hunter', detail: 'Asset intelligence enriched from Shodan & Censys' },
+    { phase: 'Initial Access', status: 'Complete', owner: 'RedBot', detail: 'Weak OAuth tokens exploited via API gateway' },
+    { phase: 'Persistence', status: 'Active', owner: 'Striker', detail: 'Created stealth service account with MFA bypass reroute' },
+    { phase: 'Privilege Escalation', status: 'Queued', owner: 'Commander', detail: 'Gathering IAM misconfig data for lateral movement' },
+    { phase: 'Impact', status: 'Queued', owner: 'Storm', detail: 'Prepping data exfil/PDR scenarios' },
+  ];
+  const fixPipeline = [
+    { title: 'Lock down IAM roles', status: 'In Progress', owner: 'Security Ops', eta: '2h', detail: 'Attacker controlled IAM policy due to wildcards' },
+    { title: 'Rotate exposed API tokens', status: 'Pending', owner: 'DevOps Team', eta: '8h', detail: 'Multiple services share the same static key' },
+    { title: 'Apply WAF rules on auth endpoints', status: 'Scheduled', owner: 'AppSec', eta: 'Tomorrow', detail: 'Block brute-force patterns and anomalous geos' },
+  ];
+  const severityLevels = ['Critical', 'High', 'Medium', 'Low'];
+  const riskCategories = ['Injection', 'Auth', 'Cloud', 'Dependencies', 'Misconfiguration'];
+  const riskHeatmap = riskCategories.map((category) => {
+    const rowCounts = severityLevels.map((level) => {
+      const match = recentFindings.filter(
+        (item) =>
+          item.severity === level &&
+          (item.title.toLowerCase().includes(category.toLowerCase()) ||
+            item.description.toLowerCase().includes(category.toLowerCase()))
+      ).length;
+      return { level, count: match };
+    });
+    return { category, rowCounts };
+  });
 
   const getSeverityColor = (severity) => {
     const colors = {

@@ -19,6 +19,7 @@ export default function Header() {
   const isOwner = user?.role === 'owner';
   const authedLinks = [];
   if (isAuthed) {
+    authedLinks.push({ name: 'Vault', href: createPageUrl('DocumentVault'), isPage: true });
     authedLinks.push({ name: 'Assets', href: createPageUrl('AssetInventory'), isPage: true });
     authedLinks.push({ name: 'Risk Register', href: createPageUrl('RiskRegister'), isPage: true });
   }

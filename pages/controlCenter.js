@@ -45,6 +45,16 @@ const featureCatalog = [
     label: 'Compliance Automation',
     description: 'Policy mapping and evidence capture for audits.',
   },
+  {
+    key: 'documentVault',
+    label: 'Secure Document Vault',
+    description: 'Sandbox uploads, control downloads, and retain forensic audit trails.',
+  },
+  {
+    key: 'forensicWatermarking',
+    label: 'Forensic Watermarking',
+    description: 'Per-download watermarking with “who did it” verification for leak investigations.',
+  },
 ];
 
 export default function ControlCenter() {
@@ -112,6 +122,13 @@ export default function ControlCenter() {
     const updated = await ironroot.entities.Organization.update(orgState.id, { features: next });
     setOrgState(updated);
     queryClient.invalidateQueries({ queryKey: ['orgs'] });
+    if (key === 'forensicWatermarking') {
+      await ironroot.integrations.Forensics.updateConfig({
+        orgId: orgState.id,
+        ownerEmail: ownerEmail || orgState.ownerEmail,
+        enable: next.forensicWatermarking,
+      });
+    }
   };
 
   const saveOwnerEmail = async () => {
@@ -193,6 +210,7 @@ export default function ControlCenter() {
               <div className="admin-hero__actions">
                 <Button variant="outline" onClick={() => (window.location.href = '/adminDashboard')}>Admin Dashboard</Button>
                 <Button variant="outline" onClick={() => (window.location.href = '/userManagement')}>User Management</Button>
+                <Button variant="outline" onClick={() => (window.location.href = '/documentVault')}>Document Vault</Button>
                 <Button variant="outline" onClick={() => (window.location.href = '/assetInventory')}>Asset Inventory</Button>
                 <Button variant="outline" onClick={() => (window.location.href = '/riskRegister')}>Risk Register</Button>
               </div>
@@ -222,94 +240,127 @@ export default function ControlCenter() {
           </div>
 
           <div className="grid gap-8 mb-8">
-            <Card className="bg-gray-800 border-gray-700">
+            <Card className="card--glass">
               <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2">
-                  <UserCheck className="h-5 w-5" />
-                  Ownership & Policies
+                <CardTitle>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}>
+                    <UserCheck size={18} />
+                    Ownership &amp; Policies
+                  </span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-gray-300 table-compact">
-                    <colgroup>
-                      <col style={{ width: '25%' }} />
-                      <col style={{ width: '45%' }} />
-                      <col style={{ width: '30%' }} />
-                    </colgroup>
-                    <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="table">
+                    <thead>
                       <tr>
-                        <th className="py-3 pr-4">Field</th>
-                        <th className="py-3 pr-4">Value</th>
-                        <th className="py-3 pr-4">Action</th>
+                        <th style={{ minWidth: '200px' }}>Policy</th>
+                        <th style={{ minWidth: '260px' }}>Current</th>
+                        <th style={{ minWidth: '340px' }}>Configure</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800">
+                    <tbody>
                       <tr>
-                        <td className="py-3 pr-4">
-                          <span className="field-chip">Owner</span>
-                          <div className="text-xs text-gray-400 mt-1">Email responsible for approvals</div>
+                        <td>
+                          <div style={{ display: 'grid', gap: '6px' }}>
+                            <span className="field-chip">Owner</span>
+                            <span className="card__meta" style={{ whiteSpace: 'normal' }}>
+                              Email responsible for approvals and privileged actions.
+                            </span>
+                          </div>
                         </td>
-                        <td className="py-3 pr-4 text-white">
+                        <td className="card__meta" style={{ whiteSpace: 'normal' }}>
                           {ownerEmail || orgState?.ownerEmail || user?.email}
                         </td>
-                        <td className="py-3 pr-4">
-                          <div className="table__actions">
-                            <Input
-                              value={ownerEmail}
-                              onChange={(e) => setOwnerEmail(e.target.value)}
-                              className="bg-gray-900 border-gray-700 text-white"
-                              style={{ width: '220px' }}
-                            />
-                            <Button onClick={saveOwnerEmail} className="bg-red-600 hover:bg-red-700">Update</Button>
+                        <td>
+                          <div className="table__actions" style={{ alignItems: 'center' }}>
+                            <div style={{ flex: 1, minWidth: '220px' }}>
+                              <Input
+                                value={ownerEmail}
+                                onChange={(e) => setOwnerEmail(e.target.value)}
+                                placeholder="owner@company.com"
+                              />
+                            </div>
+                            <Button onClick={saveOwnerEmail}>Update Owner</Button>
                           </div>
                         </td>
                       </tr>
                       <tr>
-                        <td className="py-3 pr-4">
-                          <span className="field-chip">Security</span>
-                          <div className="text-xs text-gray-400 mt-1">Session timeout &amp; AI throttle</div>
+                        <td>
+                          <div style={{ display: 'grid', gap: '6px' }}>
+                            <span className="field-chip">Security</span>
+                            <span className="card__meta" style={{ whiteSpace: 'normal' }}>
+                              Session TTL and AI request throttling.
+                            </span>
+                          </div>
                         </td>
-                        <td className="py-3 pr-4 text-gray-300">
-                          {orgState?.security?.sessionTimeoutMins || securityForm.sessionTimeoutMins}m session ·
-                          {orgState?.security?.aiRequestsPerMin || securityForm.aiRequestsPerMin} AI calls / min
+                        <td className="card__meta" style={{ whiteSpace: 'normal' }}>
+                          Session timeout: {orgState?.security?.sessionTimeoutMins || securityForm.sessionTimeoutMins}m
+                          <br />
+                          AI requests/min: {orgState?.security?.aiRequestsPerMin || securityForm.aiRequestsPerMin}
                         </td>
-                        <td className="py-3 pr-4">
-                          <div className="table__actions">
-                            <Input
-                              type="number"
-                              value={securityForm.sessionTimeoutMins}
-                              onChange={(e) => setSecurityForm((prev) => ({ ...prev, sessionTimeoutMins: e.target.value }))}
-                              className="bg-gray-900 border-gray-700 text-white"
-                              style={{ width: '120px' }}
-                            />
-                            <Input
-                              type="number"
-                              value={securityForm.aiRequestsPerMin}
-                              onChange={(e) => setSecurityForm((prev) => ({ ...prev, aiRequestsPerMin: e.target.value }))}
-                              className="bg-gray-900 border-gray-700 text-white"
-                              style={{ width: '140px' }}
-                            />
-                            <Button onClick={saveSecurity} className="bg-red-600 hover:bg-red-700">Save</Button>
+                        <td>
+                          <div
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                              gap: '12px',
+                              alignItems: 'end',
+                            }}
+                          >
+                            <div>
+                              <label className="card__meta">Session timeout (mins)</label>
+                              <Input
+                                type="number"
+                                value={securityForm.sessionTimeoutMins}
+                                onChange={(e) => setSecurityForm((prev) => ({ ...prev, sessionTimeoutMins: e.target.value }))}
+                              />
+                            </div>
+                            <div>
+                              <label className="card__meta">AI requests / min</label>
+                              <Input
+                                type="number"
+                                value={securityForm.aiRequestsPerMin}
+                                onChange={(e) => setSecurityForm((prev) => ({ ...prev, aiRequestsPerMin: e.target.value }))}
+                              />
+                            </div>
+                            <div>
+                              <Button onClick={saveSecurity}>Save Policy</Button>
+                            </div>
                           </div>
                         </td>
                       </tr>
                       <tr>
-                        <td className="py-3 pr-4">
-                          <span className="field-chip">Organization</span>
-                          <div className="text-xs text-gray-400 mt-1">Snapshot view</div>
+                        <td>
+                          <div style={{ display: 'grid', gap: '6px' }}>
+                            <span className="field-chip">Organization</span>
+                            <span className="card__meta" style={{ whiteSpace: 'normal' }}>
+                              Snapshot view of the active tenant.
+                            </span>
+                          </div>
                         </td>
-                        <td className="py-3 pr-4 text-gray-300">
-                          {orgState?.name || 'Unknown'} · Plan {orgState?.plan || 'N/A'} · Users {users.length} · Admins {adminUsers.length}
+                        <td className="card__meta" style={{ whiteSpace: 'normal' }}>
+                          {orgState?.name || 'Unknown'}
+                          <br />
+                          Plan: {orgState?.plan || 'N/A'} · Users: {users.length} · Admins: {adminUsers.length}
                         </td>
-                        <td className="py-3 pr-4">
-                          <Button variant="ghost" onClick={() => (window.location.href = '/adminDashboard')}>Open Org</Button>
+                        <td>
+                          <div className="table__actions">
+                            <Button variant="ghost" onClick={() => (window.location.href = '/documentVault')}>
+                              Open Vault
+                            </Button>
+                            <Button variant="ghost" onClick={() => (window.location.href = '/adminDashboard')}>
+                              Open Admin
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Owner email is required for admin approvals. Security policies apply immediately.</p>
+                <p className="card__meta" style={{ marginTop: '12px' }}>
+                  Owner email is required for admin approvals. Policy changes apply immediately.
+                </p>
               </CardContent>
             </Card>
           </div>

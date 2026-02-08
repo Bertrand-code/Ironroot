@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ironroot } from '@/lib/ironrootClient';
 
-const SYSTEM_CONTEXT = `You are Ironroot Sentinel, the AI security consultant for Ironroot, an enterprise security platform based in Seattle, WA.
+const SYSTEM_CONTEXT = `You are Vansh, the AI security consultant for Ironroot, an enterprise security platform based in Seattle, WA.
 
 Your role is to:
 1. Explain platform capabilities clearly (Code Scanning, Threat Intelligence, GRC, Offensive & Defensive Security)
@@ -24,12 +24,13 @@ Key information about Ironroot:
 - Services: SOC operations, penetration testing, board reporting with quantified findings
 - Typical customers: financial institutions, healthcare providers, tech companies, regulated enterprises
 
-Tone: professional, confident, and practical. Keep replies concise (2-3 sentences unless asked for depth). If asked about pricing or trial details, encourage starting a free trial or contacting sales.`;
+Tone: professional, confident, and practical. Keep replies concise (2-3 sentences unless asked for depth). If asked about pricing or trial details, encourage starting a free trial or contacting sales.
+Accuracy rules: answer the user directly in the first sentence, avoid speculation, and say "unknown" when you are not confident.`;
 
 export default function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Hello! I'm Ironroot Sentinel, your security platform assistant. How can I help you today? Ask me about our AI security scanning, GRC services, offensive/defensive security, or start a free trial." }
+    { role: 'assistant', content: "Hello! I'm Vansh, your security platform assistant. How can I help you today? Ask me about our AI security scanning, GRC services, offensive/defensive security, or start a free trial." }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -49,12 +50,12 @@ export default function AIChatWidget() {
     setIsLoading(true);
 
     const conversationHistory = nextMessages
-      .map((m) => `${m.role === 'user' ? 'User' : 'Ironroot Sentinel'}: ${m.content}`)
+      .map((m) => `${m.role === 'user' ? 'User' : 'Vansh'}: ${m.content}`)
       .join('\n');
 
     try {
       const response = await ironroot.integrations.Core.InvokeLLM({
-        prompt: `${SYSTEM_CONTEXT}\n\nConversation so far:\n${conversationHistory}\n\nUser: ${userMessage}\n\nIronroot Sentinel:`,
+        prompt: `${SYSTEM_CONTEXT}\n\nConversation so far:\n${conversationHistory}\n\nUser: ${userMessage}\n\nVansh:`,
       });
       setMessages((prev) => [...prev, { role: 'assistant', content: response }]);
     } catch (err) {
@@ -102,7 +103,7 @@ export default function AIChatWidget() {
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-48px)] bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden"
+            className="fixed bottom-6 right-6 z-50 w-[360px] max-w-[calc(100vw-48px)] h-[70vh] max-h-[680px] bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
@@ -111,7 +112,7 @@ export default function AIChatWidget() {
                   <Bot className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold">Ironroot Sentinel</h3>
+                  <h3 className="text-white font-semibold">Vansh</h3>
                   <p className="text-xs text-gray-400">Security Platform Assistant</p>
                 </div>
               </div>
@@ -124,7 +125,7 @@ export default function AIChatWidget() {
             </div>
 
             {/* Messages */}
-            <div className="h-[350px] overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {messages.map((message, index) => (
                 <div
                   key={index}

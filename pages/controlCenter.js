@@ -55,6 +55,11 @@ const featureCatalog = [
     label: 'Forensic Watermarking',
     description: 'Per-download watermarking with “who did it” verification for leak investigations.',
   },
+  {
+    key: 'securityTraining',
+    label: 'Security Awareness Training',
+    description: 'Phishing simulations, policy training, and user risk scoring.',
+  },
 ];
 
 export default function ControlCenter() {
@@ -65,6 +70,9 @@ export default function ControlCenter() {
   const [securityForm, setSecurityForm] = useState({
     sessionTimeoutMins: 45,
     aiRequestsPerMin: 30,
+    screenWatermarkingEnabled: false,
+    captureSignalsEnabled: false,
+    secureViewMode: false,
   });
 
   useEffect(() => {
@@ -74,6 +82,9 @@ export default function ControlCenter() {
       setSecurityForm({
         sessionTimeoutMins: org.security?.sessionTimeoutMins || 45,
         aiRequestsPerMin: org.security?.aiRequestsPerMin || 30,
+        screenWatermarkingEnabled: !!org.security?.screenWatermarkingEnabled,
+        captureSignalsEnabled: !!org.security?.captureSignalsEnabled,
+        secureViewMode: !!org.security?.secureViewMode,
       });
     }
   }, [org]);
@@ -94,6 +105,12 @@ export default function ControlCenter() {
     queryKey: ['orgs'],
     queryFn: () => ironroot.entities.Organization.list('name'),
     enabled: !!user,
+  });
+
+  const { data: forensicsConfig } = useQuery({
+    queryKey: ['forensicsConfig', org?.id],
+    queryFn: () => ironroot.integrations.Forensics.getConfig({ orgId: org?.id, ownerEmail: ownerEmail || org?.ownerEmail }),
+    enabled: !!user && !!org?.id,
   });
 
   const adminUsers = useMemo(() => users.filter((item) => ['admin', 'owner'].includes(item.role)), [users]);
@@ -142,6 +159,9 @@ export default function ControlCenter() {
     const security = {
       sessionTimeoutMins: Number(securityForm.sessionTimeoutMins) || 45,
       aiRequestsPerMin: Number(securityForm.aiRequestsPerMin) || 30,
+      screenWatermarkingEnabled: !!securityForm.screenWatermarkingEnabled,
+      captureSignalsEnabled: !!securityForm.captureSignalsEnabled,
+      secureViewMode: !!securityForm.secureViewMode,
     };
     const updated = await ironroot.entities.Organization.update(orgState.id, { security });
     setOrgState(updated);
@@ -149,6 +169,23 @@ export default function ControlCenter() {
       userEmail: user.email,
       action: 'security_policy_updated',
       details: security,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  const toggleAdminForensics = async () => {
+    if (!orgState) return;
+    const next = !forensicsConfig?.allowAdminVerify;
+    await ironroot.integrations.Forensics.updateConfig({
+      orgId: orgState.id,
+      ownerEmail: ownerEmail || orgState.ownerEmail,
+      allowAdminVerify: next,
+    });
+    queryClient.invalidateQueries({ queryKey: ['forensicsConfig', orgState.id] });
+    await ironroot.entities.ActivityLog.create({
+      userEmail: user.email,
+      action: 'forensics_admin_access_updated',
+      details: { allowAdminVerify: next },
       timestamp: new Date().toISOString(),
     });
   };
@@ -258,6 +295,26 @@ export default function ControlCenter() {
                         <th style={{ minWidth: '260px' }}>Current</th>
                         <th style={{ minWidth: '340px' }}>Configure</th>
                       </tr>
+                      <tr>
+                        <td>
+                          <div style={{ display: 'grid', gap: '6px' }}>
+                            <span className="field-chip">Forensics Access</span>
+                            <span className="card__meta" style={{ whiteSpace: 'normal' }}>
+                              Allow trusted admins to verify forensic watermarks.
+                            </span>
+                          </div>
+                        </td>
+                        <td className="card__meta" style={{ whiteSpace: 'normal' }}>
+                          Admin verification: {forensicsConfig?.allowAdminVerify ? 'Allowed' : 'Owner only'}
+                        </td>
+                        <td>
+                          <div className="table__actions">
+                            <Button variant="ghost" onClick={toggleAdminForensics}>
+                              {forensicsConfig?.allowAdminVerify ? 'Restrict to Owner' : 'Allow Admin Verification'}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
                     </thead>
                     <tbody>
                       <tr>
@@ -298,6 +355,12 @@ export default function ControlCenter() {
                           Session timeout: {orgState?.security?.sessionTimeoutMins || securityForm.sessionTimeoutMins}m
                           <br />
                           AI requests/min: {orgState?.security?.aiRequestsPerMin || securityForm.aiRequestsPerMin}
+                          <br />
+                          Screen watermark: {orgState?.security?.screenWatermarkingEnabled ? 'Enabled' : 'Disabled'}
+                          <br />
+                          Capture signals: {orgState?.security?.captureSignalsEnabled ? 'Enabled' : 'Disabled'}
+                          <br />
+                          Secure view mode: {orgState?.security?.secureViewMode ? 'Enabled' : 'Disabled'}
                         </td>
                         <td>
                           <div
@@ -323,6 +386,45 @@ export default function ControlCenter() {
                                 value={securityForm.aiRequestsPerMin}
                                 onChange={(e) => setSecurityForm((prev) => ({ ...prev, aiRequestsPerMin: e.target.value }))}
                               />
+                            </div>
+                            <div style={{ display: 'grid', gap: '6px' }}>
+                              <label className="card__meta">Screen watermark</label>
+                              <label className="card__meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={securityForm.screenWatermarkingEnabled}
+                                  onChange={(e) =>
+                                    setSecurityForm((prev) => ({ ...prev, screenWatermarkingEnabled: e.target.checked }))
+                                  }
+                                />
+                                Enable watermark overlay
+                              </label>
+                            </div>
+                            <div style={{ display: 'grid', gap: '6px' }}>
+                              <label className="card__meta">Capture signals</label>
+                              <label className="card__meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={securityForm.captureSignalsEnabled}
+                                  onChange={(e) =>
+                                    setSecurityForm((prev) => ({ ...prev, captureSignalsEnabled: e.target.checked }))
+                                  }
+                                />
+                                Log screen-capture signals
+                              </label>
+                            </div>
+                            <div style={{ display: 'grid', gap: '6px' }}>
+                              <label className="card__meta">Secure view</label>
+                              <label className="card__meta" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={securityForm.secureViewMode}
+                                  onChange={(e) =>
+                                    setSecurityForm((prev) => ({ ...prev, secureViewMode: e.target.checked }))
+                                  }
+                                />
+                                Reduce copy risk
+                              </label>
                             </div>
                             <div>
                               <Button onClick={saveSecurity}>Save Policy</Button>

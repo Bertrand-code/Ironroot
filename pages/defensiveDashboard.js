@@ -86,25 +86,38 @@ export default function DefensiveDashboard() {
               <CardTitle className="text-white">Recent Threats</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentThreats.map((threat, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-1">
-                        <span className="text-sm text-gray-500">{threat.time}</span>
-                        <span className="font-medium text-white">{threat.type}</span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${getSeverityColor(threat.severity)}`}>
-                          {threat.severity}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-400">{threat.source}</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-5 w-5 text-green-500" />
-                      <span className="text-sm text-green-500">{threat.status}</span>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="table w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Time</th>
+                      <th className="py-3 pr-4">Threat</th>
+                      <th className="py-3 pr-4">Severity</th>
+                      <th className="py-3 pr-4">Source</th>
+                      <th className="py-3 pr-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {recentThreats.map((threat, index) => (
+                      <tr key={index}>
+                        <td className="py-3 pr-4 text-gray-400">{threat.time}</td>
+                        <td className="py-3 pr-4 text-white">{threat.type}</td>
+                        <td className="py-3 pr-4">
+                          <span className={`text-xs px-2 py-1 rounded-full ${getSeverityColor(threat.severity)}`}>
+                            {threat.severity}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400">{threat.source}</td>
+                        <td className="py-3 pr-4 text-gray-400">
+                          <div className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span className="text-sm text-green-500">{threat.status}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>

@@ -77,12 +77,12 @@ export default function ReportCenter() {
 
   // Risk categories (SecurityScorecard-style)
   const riskCategories = [
-    { category: 'Application Security', score: Math.max(0, 100 - (criticalVulns * 5)) },
-    { category: 'Network Security', score: Math.max(0, 100 - (highVulns * 3)) },
-    { category: 'DNS Health', score: 85 },
-    { category: 'Patching Cadence', score: Math.max(0, 100 - (criticalVulns * 7)) },
-    { category: 'Endpoint Security', score: 90 },
-    { category: 'IP Reputation', score: 95 },
+    { category: 'Application Security', score: Math.max(0, 100 - (criticalVulns * 5)), trend: 'improving', delta: '+3' },
+    { category: 'Network Security', score: Math.max(0, 100 - (highVulns * 3)), trend: 'stable', delta: '+0' },
+    { category: 'DNS Health', score: 85, trend: 'improving', delta: '+2' },
+    { category: 'Patching Cadence', score: Math.max(0, 100 - (criticalVulns * 7)), trend: 'degrading', delta: '-4' },
+    { category: 'Endpoint Security', score: 90, trend: 'improving', delta: '+1' },
+    { category: 'IP Reputation', score: 95, trend: 'stable', delta: '+0' },
   ];
 
   const getScoreColor = (score) => {
@@ -185,26 +185,33 @@ export default function ReportCenter() {
 
               <div>
                 <h3 className="text-lg font-semibold text-gray-300 mb-4">Risk Factor Breakdown</h3>
-                <div className="space-y-3">
-                  {riskCategories.map((risk, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-300">{risk.category}</span>
-                        <span className="font-medium" style={{ color: getScoreColor(risk.score) }}>
-                          {risk.score}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div
-                          className="h-2 rounded-full transition-all duration-500"
-                          style={{
-                            width: `${risk.score}%`,
-                            backgroundColor: getScoreColor(risk.score)
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="table w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                      <tr>
+                        <th className="py-3 pr-4">Category</th>
+                        <th className="py-3 pr-4">Score</th>
+                        <th className="py-3 pr-4">Grade</th>
+                        <th className="py-3 pr-4">Trend</th>
+                        <th className="py-3 pr-4">Signal</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {riskCategories.map((risk, idx) => (
+                        <tr key={idx}>
+                          <td className="py-3 pr-4 text-white">{risk.category}</td>
+                          <td className="py-3 pr-4" style={{ color: getScoreColor(risk.score) }}>
+                            {risk.score}
+                          </td>
+                          <td className="py-3 pr-4 text-gray-400">{getScoreGrade(risk.score)}</td>
+                          <td className="py-3 pr-4 text-gray-400">{risk.trend}</td>
+                          <td className="py-3 pr-4">
+                            <span className="badge">{risk.delta}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>

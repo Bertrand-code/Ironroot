@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Zap, Code, Download, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
 
 export default function AutoRemediation() {
   const [selectedVuln, setSelectedVuln] = useState(null);

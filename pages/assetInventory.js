@@ -170,31 +170,70 @@ export default function AssetInventory() {
                     <option value="restricted">Restricted</option>
                   </select>
                 </div>
-                <div className="space-y-3">
-                  {filteredAssets.map((asset) => (
-                    <div key={asset.id} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                      <div>
-                        <p className="text-white font-semibold">{asset.name}</p>
-                        <p className="text-xs text-gray-400">{asset.type?.toUpperCase()} · {asset.environment} · {asset.exposure}</p>
-                        {asset.tags?.length ? (
-                          <div className="flex flex-wrap gap-2 mt-2">
-                            {asset.tags.map((tag) => (
-                              <Badge key={tag} className="bg-gray-700 text-gray-200">{tag}</Badge>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Badge className={criticalityColors[asset.criticality] || 'bg-gray-700 text-gray-200'}>
-                          {asset.criticality}
-                        </Badge>
-                        <span className="text-xs text-gray-500">Last seen {new Date(asset.lastSeen).toLocaleString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {filteredAssets.length === 0 && (
-                    <div className="text-sm text-gray-500">No assets match your filters yet.</div>
-                  )}
+                <div className="overflow-x-auto">
+                  <table className="table w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                      <tr>
+                        <th className="py-3 pr-4">Asset</th>
+                        <th className="py-3 pr-4">Type</th>
+                        <th className="py-3 pr-4">Environment</th>
+                        <th className="py-3 pr-4">Exposure</th>
+                        <th className="py-3 pr-4">Criticality</th>
+                        <th className="py-3 pr-4">Tags</th>
+                        <th className="py-3 pr-4">Last Seen</th>
+                        <th className="py-3 pr-4">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {filteredAssets.map((asset) => {
+                        const typeLabel =
+                          assetTypes.find((type) => type.value === asset.type)?.label || asset.type || 'Unknown';
+                        const statusLabel = asset.status || 'active';
+                        return (
+                          <tr key={asset.id}>
+                            <td className="py-3 pr-4">
+                              <div className="text-white font-semibold">{asset.name}</div>
+                              <div className="text-xs text-gray-500">ID: {asset.id}</div>
+                            </td>
+                            <td className="py-3 pr-4 text-gray-400">{typeLabel}</td>
+                            <td className="py-3 pr-4 text-gray-400">{asset.environment || '—'}</td>
+                            <td className="py-3 pr-4 text-gray-400">{asset.exposure || '—'}</td>
+                            <td className="py-3 pr-4">
+                              <Badge className={criticalityColors[asset.criticality] || 'bg-gray-700 text-gray-200'}>
+                                {asset.criticality || 'medium'}
+                              </Badge>
+                            </td>
+                            <td className="py-3 pr-4">
+                              {asset.tags?.length ? (
+                                <div className="flex flex-wrap gap-2">
+                                  {asset.tags.map((tag) => (
+                                    <Badge key={tag} className="bg-gray-700 text-gray-200">{tag}</Badge>
+                                  ))}
+                                </div>
+                              ) : (
+                                <span className="text-gray-500">—</span>
+                              )}
+                            </td>
+                            <td className="py-3 pr-4 text-gray-400">
+                              {asset.lastSeen ? new Date(asset.lastSeen).toLocaleString() : '—'}
+                            </td>
+                            <td className="py-3 pr-4">
+                              <Badge className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                                {statusLabel}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {filteredAssets.length === 0 && (
+                        <tr>
+                          <td colSpan={8} className="text-sm text-gray-500 py-6">
+                            No assets match your filters yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </CardContent>
             </Card>

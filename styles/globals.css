@@ -537,8 +537,67 @@ textarea {
   color: var(--text-dim);
 }
 
+.nav--grouped {
+  flex-wrap: wrap;
+  row-gap: 14px;
+}
+
+.nav__group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.nav__group-title {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.8);
+}
+
+.nav__group-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .nav a:hover {
   color: var(--text);
+}
+
+.security-watermark {
+  position: fixed;
+  inset: -10% 0;
+  z-index: 20;
+  pointer-events: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 48px;
+  opacity: 0.08;
+  color: rgba(226, 232, 240, 0.65);
+  transform: rotate(-18deg);
+  font-size: 12px;
+  text-transform: uppercase;
+  mix-blend-mode: screen;
+}
+
+.security-watermark__stamp {
+  white-space: nowrap;
+}
+
+.secure-view .secure-view__content {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+
+.secure-view .secure-view__content input,
+.secure-view .secure-view__content textarea {
+  user-select: text;
 }
 
 .hero {
@@ -598,6 +657,14 @@ textarea {
 
   .nav {
     flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .nav__group {
+    width: 100%;
+  }
+
+  .nav__group-links {
     justify-content: center;
   }
 

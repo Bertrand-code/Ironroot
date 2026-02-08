@@ -116,6 +116,12 @@ export default function AdminDashboard() {
     enabled: !!user,
   });
 
+  const { data: auditEvents = [] } = useQuery({
+    queryKey: ['auditEvents', org?.id],
+    queryFn: () => ironroot.integrations.Audit.events({ orgId: org?.id, limit: 12 }),
+    enabled: !!user && !!org?.id,
+  });
+
   const orgMap = orgs.reduce((acc, orgItem) => {
     acc[orgItem.id] = orgItem.name;
     return acc;
@@ -493,25 +499,39 @@ contact@ironroot.com`
               <CardTitle className="text-white">Companies & Plans</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {orgs.map((orgItem) => (
-                  <div key={orgItem.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-sm text-white font-medium">{orgItem.name}</p>
-                        <p className="text-xs text-gray-500">{orgItem.industry} • {orgItem.size}</p>
-                      </div>
-                      <Badge className={orgItem.plan === 'paid' ? 'bg-green-500' : 'bg-yellow-500'}>
-                        {orgItem.plan}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      Users: {orgUserCounts[orgItem.id] || 0}
-                    </p>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="table w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Company</th>
+                      <th className="py-3 pr-4">Industry</th>
+                      <th className="py-3 pr-4">Size</th>
+                      <th className="py-3 pr-4">Plan</th>
+                      <th className="py-3 pr-4">Owner</th>
+                      <th className="py-3 pr-4">Users</th>
+                      <th className="py-3 pr-4">Org ID</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {orgs.map((orgItem) => (
+                      <tr key={orgItem.id}>
+                        <td className="py-3 pr-4 text-white">{orgItem.name}</td>
+                        <td className="py-3 pr-4 text-gray-400">{orgItem.industry || '—'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{orgItem.size || '—'}</td>
+                        <td className="py-3 pr-4">
+                          <Badge className={orgItem.plan === 'paid' ? 'bg-green-500' : 'bg-yellow-500'}>
+                            {orgItem.plan}
+                          </Badge>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400">{orgItem.ownerEmail || '—'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{orgUserCounts[orgItem.id] || 0}</td>
+                        <td className="py-3 pr-4 text-gray-400">{orgItem.id}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 {orgs.length === 0 && (
-                  <p className="text-sm text-gray-500">No organizations yet.</p>
+                  <p className="text-sm text-gray-500 mt-4">No organizations yet.</p>
                 )}
               </div>
             </CardContent>
@@ -547,32 +567,56 @@ contact@ironroot.com`
               <CardTitle className="text-white">Admin Access Requests</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {adminRequests.map((request) => (
-                  <div key={request.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-white">{request.email}</p>
-                        <p className="text-xs text-gray-500">{request.reason}</p>
-                      </div>
-                      <Badge className={request.status === 'approved' ? 'bg-green-500' : request.status === 'denied' ? 'bg-red-500' : 'bg-yellow-500'}>
-                        {request.status || 'pending'}
-                      </Badge>
-                    </div>
-                    {request.status === 'pending' && (
-                      <div className="mt-3 flex gap-2">
-                        <Button className="bg-green-600 hover:bg-green-700" onClick={() => approveAdminRequest(request)}>
-                          Approve
-                        </Button>
-                        <Button variant="ghost" onClick={() => denyAdminRequest(request)}>
-                          Deny
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="table w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Requester</th>
+                      <th className="py-3 pr-4">Reason</th>
+                      <th className="py-3 pr-4">Requested By</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 pr-4">Requested</th>
+                      <th className="py-3 pr-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {adminRequests.map((request) => (
+                      <tr key={request.id}>
+                        <td className="py-3 pr-4 text-white">{request.email}</td>
+                        <td className="py-3 pr-4 text-gray-400">{request.reason || '—'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{request.requestedBy || '—'}</td>
+                        <td className="py-3 pr-4">
+                          <Badge className={request.status === 'approved' ? 'bg-green-500' : request.status === 'denied' ? 'bg-red-500' : 'bg-yellow-500'}>
+                            {request.status || 'pending'}
+                          </Badge>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400">
+                          {request.created_date ? new Date(request.created_date).toLocaleString() : '—'}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="flex gap-2">
+                            <Button
+                              className="bg-green-600 hover:bg-green-700"
+                              disabled={request.status !== 'pending'}
+                              onClick={() => approveAdminRequest(request)}
+                            >
+                              Approve
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              disabled={request.status !== 'pending'}
+                              onClick={() => denyAdminRequest(request)}
+                            >
+                              Deny
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 {adminRequests.length === 0 && (
-                  <p className="text-sm text-gray-500">No admin requests.</p>
+                  <p className="text-sm text-gray-500 mt-4">No admin requests.</p>
                 )}
               </div>
             </CardContent>
@@ -657,6 +701,45 @@ contact@ironroot.com`
             </CardContent>
           </Card>
         </div>
+
+        <Card className="bg-gray-800 border-gray-700 mb-10">
+          <CardHeader>
+            <CardTitle className="text-white">Immutable Security Log</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left text-gray-300">
+                <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                  <tr>
+                    <th className="py-3 pr-4">Time</th>
+                    <th className="py-3 pr-4">Actor</th>
+                    <th className="py-3 pr-4">Action</th>
+                    <th className="py-3 pr-4">Source</th>
+                    <th className="py-3 pr-4">Hash</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {auditEvents.map((event) => (
+                    <tr key={event.id}>
+                      <td className="py-3 pr-4 text-gray-400">
+                        {event.timestamp ? new Date(event.timestamp).toLocaleString() : '—'}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-400">{event.actorEmail || '—'}</td>
+                      <td className="py-3 pr-4 text-white">{event.action?.replace(/_/g, ' ')}</td>
+                      <td className="py-3 pr-4 text-gray-400">{event.source || 'ui'}</td>
+                      <td className="py-3 pr-4 text-gray-400" title={event.hash}>
+                        {event.hash ? `${event.hash.slice(0, 12)}…` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {auditEvents.length === 0 && (
+                <p className="text-sm text-gray-500 mt-4">No immutable events yet.</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid lg:grid-cols-2 gap-8 mb-10">
           <Card className="bg-gray-800 border-gray-700">
@@ -749,53 +832,54 @@ contact@ironroot.com`
         <div className="grid lg:grid-cols-2 gap-8">
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">Trial Requests</h2>
-            <div className="space-y-4">
-              {trialRequests.map((request) => (
-                <Card key={request.id} className="bg-gray-800 border-gray-700">
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="font-bold text-white">{request.fullName}</h3>
-                        <p className="text-sm text-gray-400">{request.email}</p>
-                        {request.companyName && (
-                          <p className="text-sm text-gray-500">{request.companyName}</p>
-                        )}
-                      </div>
-                      <Badge className={getStatusBadge(request.status).color}>
-                        {getStatusBadge(request.status).label}
-                      </Badge>
-                    </div>
-                    <div className="space-y-2 text-sm">
-                      <p className="text-gray-400">
-                        <span className="font-medium">Interested in:</span> {request.interestedIn?.replace('_', ' ')}
-                      </p>
-                      {request.companySize && (
-                        <p className="text-gray-400">
-                          <span className="font-medium">Company size:</span> {request.companySize}
-                        </p>
-                      )}
-                      {request.message && (
-                        <p className="text-gray-400">
-                          <span className="font-medium">Message:</span> {request.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="mt-4 flex gap-2">
-                      <Select onValueChange={(value) => updateTrialStatus(request.id, value, request)}>
-                        <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
-                          <SelectValue placeholder="Update status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="approved">Approve & Send Invite</SelectItem>
-                          <SelectItem value="trial_active">Start Trial</SelectItem>
-                          <SelectItem value="converted">Mark Converted</SelectItem>
-                          <SelectItem value="rejected">Reject</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="table w-full text-sm text-left text-gray-300">
+                <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                  <tr>
+                    <th className="py-3 pr-4">Name</th>
+                    <th className="py-3 pr-4">Email</th>
+                    <th className="py-3 pr-4">Company</th>
+                    <th className="py-3 pr-4">Interested In</th>
+                    <th className="py-3 pr-4">Size</th>
+                    <th className="py-3 pr-4">Status</th>
+                    <th className="py-3 pr-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {trialRequests.map((request) => (
+                    <tr key={request.id}>
+                      <td className="py-3 pr-4 text-white">{request.fullName || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{request.email || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{request.companyName || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400" title={request.message || ''}>
+                        {request.interestedIn?.replace('_', ' ') || '—'}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-400">{request.companySize || '—'}</td>
+                      <td className="py-3 pr-4">
+                        <Badge className={getStatusBadge(request.status).color}>
+                          {getStatusBadge(request.status).label}
+                        </Badge>
+                      </td>
+                      <td className="py-3 pr-4">
+                        <Select onValueChange={(value) => updateTrialStatus(request.id, value, request)}>
+                          <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
+                            <SelectValue placeholder="Update status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="approved">Approve & Send Invite</SelectItem>
+                            <SelectItem value="trial_active">Start Trial</SelectItem>
+                            <SelectItem value="converted">Mark Converted</SelectItem>
+                            <SelectItem value="rejected">Reject</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {trialRequests.length === 0 && (
+                <p className="text-sm text-gray-500 mt-4">No trial requests.</p>
+              )}
             </div>
           </div>
 

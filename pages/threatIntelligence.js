@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import AuthGate from '@/components/AuthGate';
 import { ironroot } from '@/lib/ironrootClient';
 import { INTEGRATIONS } from '@/lib/integrationsRegistry';
+import { useAuth } from '@/lib/useAuth';
 
 const intelLibrary = [
   {
@@ -200,12 +201,18 @@ const watchlist = [
 ];
 
 export default function ThreatIntelligence() {
+  const { user, org } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState(intelLibrary[0].id);
   const [dataSources, setDataSources] = useState([]);
   const [liveCve, setLiveCve] = useState(null);
   const [liveCveError, setLiveCveError] = useState('');
   const [liveCveLoading, setLiveCveLoading] = useState(false);
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [aiLastQuery, setAiLastQuery] = useState('');
+  const [aiStatus, setAiStatus] = useState({ geminiConfigured: false, model: '' });
   const envTemplate = `IRONROOT_DEMO_INTEGRATIONS=true
 SHODAN_API_KEY=
 CENSYS_ID=
@@ -244,6 +251,18 @@ SNYK_TOKEN=`;
   }, []);
 
   useEffect(() => {
+    const loadStatus = async () => {
+      const status = await ironroot.integrations.ThreatIntelAI.status();
+      if (status?.ok) {
+        setAiStatus(status);
+      } else {
+        setAiStatus({ geminiConfigured: false, model: '' });
+      }
+    };
+    loadStatus();
+  }, []);
+
+  useEffect(() => {
     const fetchCve = async () => {
       const query = searchQuery.trim().toUpperCase();
       const nvdReady = dataSources.find((s) => s.id === 'nvd' && s.enabled);
@@ -275,6 +294,21 @@ SNYK_TOKEN=`;
     };
     fetchCve();
   }, [searchQuery, dataSources]);
+
+  useEffect(() => {
+    setAiSummary(null);
+    setAiError('');
+  }, [searchQuery]);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) return undefined;
+    if (!user || user.role === 'guest') return undefined;
+    if (org?.features && org.features.threatIntelLive === false) return undefined;
+    const timer = setTimeout(() => {
+      runAiIntel(searchQuery.trim());
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [searchQuery, user, org?.features]);
 
   const filteredIntel = useMemo(() => {
     if (!searchQuery.trim()) return intelLibrary;
@@ -313,6 +347,30 @@ SNYK_TOKEN=`;
   }, [searchQuery]);
 
   const selectedIntel = filteredIntel.find((item) => item.id === selectedId) || filteredIntel[0];
+
+  const runAiIntel = async (overrideQuery) => {
+    const rawQuery = typeof overrideQuery === 'string' ? overrideQuery : searchQuery;
+    const query = String(rawQuery || '').trim();
+    if (!query) return;
+    if (aiLoading && query === aiLastQuery) return;
+    setAiLastQuery(query);
+    setAiLoading(true);
+    setAiError('');
+    try {
+      const result = await ironroot.integrations.ThreatIntelAI.query({ query });
+      if (!result) {
+        setAiError('AI enrichment is unavailable. Configure the Gemini API key to enable it.');
+        setAiSummary(null);
+      } else {
+        setAiSummary(result);
+      }
+    } catch (err) {
+      setAiError(err?.message || 'AI enrichment failed.');
+      setAiSummary(null);
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <div className="section">
@@ -485,6 +543,98 @@ SNYK_TOKEN=`;
                 )}
               </CardContent>
             </Card>
+
+            <AuthGate
+              title="Sign in to run AI threat enrichment"
+              description="AI threat summaries require an authenticated account and a configured AI provider."
+              plans={['paid']}
+              feature="threatIntelLive"
+            >
+              <Card className="card card--glass" style={{ marginTop: '24px' }}>
+                <CardHeader>
+                  <CardTitle>AI Threat Enrichment</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                    <Button onClick={runAiIntel} disabled={!searchQuery.trim() || aiLoading}>
+                      {aiLoading ? 'Analyzing...' : 'Run AI Enrichment'}
+                    </Button>
+                    <div className="card__meta">
+                      {user?.email ? `Signed in as ${user.email}` : 'Sign in to enable AI enrichment.'}
+                    </div>
+                    <div className="card__meta">
+                      {aiStatus.geminiConfigured
+                        ? `Gemini connected (${aiStatus.model || 'default'})`
+                        : 'Gemini not configured'}
+                    </div>
+                  </div>
+                  {!aiStatus.geminiConfigured && (
+                    <div className="card__meta" style={{ marginTop: '8px' }}>
+                      Add `GEMINI_API_KEY` to `.env.local` and restart the dev server to enable live enrichment.
+                    </div>
+                  )}
+                  {aiError && <div className="card__meta" style={{ marginTop: '12px' }}>{aiError}</div>}
+                  {aiSummary && (
+                    <div className="card card--glass" style={{ padding: '12px', marginTop: '16px' }}>
+                      <div className="badge">Summary</div>
+                      <p className="card__meta" style={{ marginTop: '8px' }}>{aiSummary.summary}</p>
+                      <div className="grid grid-2" style={{ gap: '12px', marginTop: '12px' }}>
+                        <div>
+                          <div className="badge">Impact</div>
+                          <p className="card__meta" style={{ marginTop: '6px' }}>{aiSummary.impact || '—'}</p>
+                        </div>
+                        <div>
+                          <div className="badge">Known Exploitation</div>
+                          <p className="card__meta" style={{ marginTop: '6px' }}>{aiSummary.knownExploitation || 'unknown'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-2" style={{ gap: '12px', marginTop: '12px' }}>
+                        <div>
+                          <div className="badge">Confidence</div>
+                          <p className="card__meta" style={{ marginTop: '6px' }}>{aiSummary.confidence || 'unknown'}</p>
+                        </div>
+                        <div>
+                          <div className="badge">Notes</div>
+                          <p className="card__meta" style={{ marginTop: '6px' }}>{aiSummary.notes || '—'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-2" style={{ gap: '12px', marginTop: '12px' }}>
+                        <div>
+                          <div className="badge">Indicators</div>
+                          <ul className="grid" style={{ gap: '6px', marginTop: '6px' }}>
+                            {(aiSummary.iocs || []).map((ioc) => (
+                              <li key={ioc} className="card__meta">• {ioc}</li>
+                            ))}
+                            {(aiSummary.iocs || []).length === 0 && <li className="card__meta">• No IOCs listed</li>}
+                          </ul>
+                        </div>
+                        <div>
+                          <div className="badge">Mitigations</div>
+                          <ul className="grid" style={{ gap: '6px', marginTop: '6px' }}>
+                            {(aiSummary.mitigations || []).map((item) => (
+                              <li key={item} className="card__meta">• {item}</li>
+                            ))}
+                            {(aiSummary.mitigations || []).length === 0 && <li className="card__meta">• No mitigations listed</li>}
+                          </ul>
+                        </div>
+                      </div>
+                      <div style={{ marginTop: '12px' }}>
+                        <div className="badge">References</div>
+                        <ul className="grid" style={{ gap: '6px', marginTop: '6px' }}>
+                          {(aiSummary.references || []).map((ref) => (
+                            <li key={ref} className="card__meta">• {ref}</li>
+                          ))}
+                          {(aiSummary.references || []).length === 0 && <li className="card__meta">• No references listed</li>}
+                        </ul>
+                      </div>
+                      <div className="card__meta" style={{ marginTop: '10px' }}>
+                        Last updated: {aiSummary.lastUpdated || 'unknown'}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </AuthGate>
           </div>
         )}
 

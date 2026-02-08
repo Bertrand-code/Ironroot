@@ -32,9 +32,34 @@ export default function handler(req, res) {
   }
 
   const buffer = Buffer.from(contentBase64, 'base64');
+  const observedFileHash = sha256Hex(buffer);
   const extracted = extractForensicWatermark(buffer);
   if (!extracted?.payloadB64Url) {
-    return res.status(404).json({ ok: false, error: 'No forensic watermark found.' });
+    const event = store.watermarkEvents.find(
+      (item) => item.orgId === orgId && item.watermarkedHash === observedFileHash
+    );
+    if (!event) {
+      return res.status(404).json({ ok: false, error: 'No forensic watermark found.' });
+    }
+
+    const result = {
+      matchMethod: 'hash',
+      watermarkId: event.watermarkId,
+      documentHash: event.documentHash,
+      issuedAt: event.downloadedAt,
+      signatureValid: false,
+      forensicId: event.forensicId,
+      userEmail: event.userEmail,
+      downloadedAt: event.downloadedAt,
+      userHash: event.userHash,
+      observedFileHash,
+      strippedFileHash: null,
+      documentId: event.documentId || '—',
+      wrapped: event.wrapped ? 'yes' : 'no',
+    };
+
+    saveServerStore(store);
+    return res.status(200).json({ ok: true, result });
   }
 
   const payload = decodeWatermarkPayload(extracted.payloadB64Url);
@@ -47,10 +72,10 @@ export default function handler(req, res) {
     (item) => item.watermarkId === payload.id && item.orgId === orgId
   );
 
-  const observedFileHash = sha256Hex(buffer);
   const strippedFileHash = extracted.originalBuffer ? sha256Hex(extracted.originalBuffer) : null;
 
   const result = {
+    matchMethod: 'embedded',
     watermarkId: payload.id,
     documentHash: payload.dh,
     issuedAt: payload.iat,
@@ -68,4 +93,3 @@ export default function handler(req, res) {
   saveServerStore(store);
   return res.status(200).json({ ok: true, result });
 }
-

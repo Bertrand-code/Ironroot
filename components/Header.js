@@ -17,24 +17,52 @@ export default function Header() {
   const { user, org } = useAuth();
   const isAuthed = user && user.role !== 'guest';
   const isOwner = user?.role === 'owner';
-  const authedLinks = [];
-  if (isAuthed) {
-    authedLinks.push({ name: 'Vault', href: createPageUrl('DocumentVault'), isPage: true });
-    authedLinks.push({ name: 'Assets', href: createPageUrl('AssetInventory'), isPage: true });
-    authedLinks.push({ name: 'Risk Register', href: createPageUrl('RiskRegister'), isPage: true });
-  }
-  if (isOwner) {
-    authedLinks.push({ name: 'Control Center', href: createPageUrl('ControlCenter'), isPage: true });
-  }
-  const navLinks = [
-    { name: 'Home', href: createPageUrl('Home'), isPage: true },
-    { name: 'Scanner', href: createPageUrl('CodeScanner'), isPage: true },
-    { name: 'Threat Intel', href: createPageUrl('ThreatIntelligence'), isPage: true },
-    { name: 'Auto-Fix', href: createPageUrl('AutoRemediation'), isPage: true },
-    { name: 'Training', href: createPageUrl('SecurityTraining'), isPage: true },
-    { name: 'Reports', href: createPageUrl('ReportCenter'), isPage: true },
-    ...authedLinks,
-    { name: 'Contact', href: `${createPageUrl('Home')}#contact` },
+
+  const navGroups = [
+    {
+      label: 'Explore',
+      links: [
+        { name: 'Home', href: createPageUrl('Home'), isPage: true },
+        { name: 'Platform', href: createPageUrl('Platform'), isPage: true },
+        { name: 'Careers', href: createPageUrl('Careers'), isPage: true },
+        { name: 'Contact', href: `${createPageUrl('Home')}#contact` },
+      ],
+    },
+    {
+      label: 'Detect',
+      links: [
+        { name: 'Scanner', href: createPageUrl('CodeScanner'), isPage: true },
+        { name: 'Threat Intel', href: createPageUrl('ThreatIntelligence'), isPage: true },
+        { name: 'AI Pentest', href: createPageUrl('OffensiveDashboard'), isPage: true },
+        { name: 'API Security', href: createPageUrl('ApiSecurity'), isPage: true },
+      ],
+    },
+    {
+      label: 'Protect',
+      links: [
+        { name: 'Auto-Fix', href: createPageUrl('AutoRemediation'), isPage: true },
+        { name: 'Vault', href: createPageUrl('DocumentVault'), isPage: true, gated: true },
+        { name: 'Assets', href: createPageUrl('AssetInventory'), isPage: true, gated: true },
+        { name: 'Risk Register', href: createPageUrl('RiskRegister'), isPage: true, gated: true },
+        { name: 'Training', href: createPageUrl('SecurityTraining'), isPage: true, gated: true },
+      ],
+    },
+    {
+      label: 'Respond',
+      links: [
+        { name: 'Reports', href: createPageUrl('ReportCenter'), isPage: true },
+        { name: 'Defense Ops', href: createPageUrl('DefensiveDashboard'), isPage: true },
+        { name: 'AI Assistant', href: createPageUrl('AiAssistant'), isPage: true },
+      ],
+    },
+    {
+      label: 'Admin',
+      links: [
+        { name: 'Control Center', href: createPageUrl('ControlCenter'), isPage: true, ownerOnly: true },
+        { name: 'User Mgmt', href: createPageUrl('UserManagement'), isPage: true, gated: true },
+        { name: 'Admin Dash', href: createPageUrl('AdminDashboard'), isPage: true, gated: true },
+      ],
+    },
   ];
 
   return (
@@ -44,11 +72,24 @@ export default function Header() {
           <Logo className="brand__logo" />
           <span>Ironroot</span>
         </a>
-        <nav className="nav">
-          {navLinks.map((link) => (
-            <NavItem key={link.name} href={link.href}>
-              {link.name}
-            </NavItem>
+        <nav className="nav nav--grouped">
+          {navGroups.map((group) => (
+            <div key={group.label} className="nav__group">
+              <span className="nav__group-title">{group.label}</span>
+              <div className="nav__group-links">
+                {group.links
+                  .filter((link) => {
+                    if (link.ownerOnly && !isOwner) return false;
+                    if (link.gated && !isAuthed) return false;
+                    return true;
+                  })
+                  .map((link) => (
+                    <NavItem key={link.name} href={link.href}>
+                      {link.name}
+                    </NavItem>
+                  ))}
+              </div>
+            </div>
           ))}
         </nav>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Shield, Crosshair, BarChart3, Bug } from 'lucide-react';
+import { Shield, Crosshair, BarChart3, Bug, GraduationCap } from 'lucide-react';
 import { createPageUrl } from '../utils';
 
 const platforms = [
@@ -50,6 +50,13 @@ const platforms = [
     description: 'Sandbox documents, apply forensic watermarking on download, and investigate leaks with “who did it” verification.',
     features: ['Sandbox Uploads', 'Forensic Watermarks', 'Download Policies', 'Leak Investigations'],
     link: '/DocumentVault'
+  },
+  {
+    icon: GraduationCap,
+    title: 'Security Awareness Training',
+    description: 'Phishing simulations, policy training, and user risk scoring with enterprise-ready campaign templates.',
+    features: ['Phishing Campaigns', 'Template Library', 'Risk Scoring', 'Compliance Attestations'],
+    link: '/SecurityTraining'
   },
 ];
 

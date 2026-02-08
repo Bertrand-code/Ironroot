@@ -3,8 +3,8 @@ const pageMap = {
   CodeScanner: '/codeScanner',
   ThreatIntelligence: '/threatIntelligence',
   AutoRemediation: '/autoRemediation',
-  SecurityTraining: '/secTraining',
   ReportCenter: '/reportCenter',
+  SecurityTraining: '/secTraining',
   CourseLab: '/courseLab',
   AdminDashboard: '/adminDashboard',
   AdminNotepad: '/adminNotepad',
@@ -19,6 +19,8 @@ const pageMap = {
   RiskRegister: '/riskRegister',
   ControlCenter: '/controlCenter',
   DocumentVault: '/documentVault',
+  Platform: '/platform',
+  Careers: '/careers',
 };
 
 export const createPageUrl = (pageName) => {

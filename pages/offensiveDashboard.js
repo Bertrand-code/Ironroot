@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Target, AlertCircle, Zap, FileText, ChevronRight, ChevronDown } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Target, AlertCircle, Zap, FileText } from 'lucide-react';
+import { motion } from 'framer-motion';
 import ReportGenerator from '../components/Reports/ReportGenerator';
 import NotificationBell from '../components/Notifications/NotificationBell';
 import AuthGate from '@/components/AuthGate';
@@ -381,85 +381,79 @@ export default function OffensiveDashboard() {
               <CardTitle className="text-white">Active Engagements</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {engagements.map((engagement, index) => (
-                  <div key={index}>
-                    <div 
-                      className="p-4 bg-gray-900/50 rounded-lg border border-gray-700 hover:border-red-500/50 transition-all cursor-pointer"
-                      onClick={() => setExpandedEngagement(expandedEngagement === index ? null : index)}
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <div>
-                          <h4 className="font-semibold text-white mb-1">{engagement.name}</h4>
-                          <p className="text-sm text-gray-400">{engagement.target}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-3 py-1 rounded-full ${
-                            engagement.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
-                            engagement.status === 'Completed' ? 'bg-green-500/10 text-green-500' :
-                            engagement.status === 'Active' ? 'bg-yellow-500/10 text-yellow-500' :
-                            'bg-purple-500/10 text-purple-500'
-                          }`}>
-                            {engagement.status}
-                          </span>
-                          {expandedEngagement === index ? (
-                            <ChevronDown className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span className="text-gray-400">
-                          Findings: <span className="text-white font-medium">{engagement.findings}</span>
-                        </span>
-                        <span className="text-gray-400">
-                          Critical: <span className="text-red-500 font-medium">{engagement.critical}</span>
-                        </span>
-                      </div>
-                    </div>
-                    <AnimatePresence>
-                      {expandedEngagement === index && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="mt-2 p-4 bg-gray-900/70 rounded-lg border border-gray-700 space-y-3">
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <h5 className="text-xs font-semibold text-gray-400 mb-1">Start Date</h5>
-                                <p className="text-sm text-gray-300">{engagement.startDate}</p>
+              <div className="overflow-x-auto">
+                <table className="table w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Engagement</th>
+                      <th className="py-3 pr-4">Target</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 pr-4">Findings</th>
+                      <th className="py-3 pr-4">Critical</th>
+                      <th className="py-3 pr-4">Start</th>
+                      <th className="py-3 pr-4">Timeline</th>
+                      <th className="py-3 pr-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {engagements.map((engagement, index) => (
+                      <React.Fragment key={index}>
+                        <tr>
+                          <td className="py-3 pr-4 text-white">{engagement.name}</td>
+                          <td className="py-3 pr-4 text-gray-400">{engagement.target}</td>
+                          <td className="py-3 pr-4">
+                            <span className={`text-xs px-3 py-1 rounded-full ${
+                              engagement.status === 'In Progress' ? 'bg-blue-500/10 text-blue-500' :
+                              engagement.status === 'Completed' ? 'bg-green-500/10 text-green-500' :
+                              engagement.status === 'Active' ? 'bg-yellow-500/10 text-yellow-500' :
+                              'bg-purple-500/10 text-purple-500'
+                            }`}>
+                              {engagement.status}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-400">{engagement.findings}</td>
+                          <td className="py-3 pr-4 text-red-400">{engagement.critical}</td>
+                          <td className="py-3 pr-4 text-gray-400">{engagement.startDate}</td>
+                          <td className="py-3 pr-4 text-gray-400">{engagement.timeline}</td>
+                          <td className="py-3 pr-4">
+                            <Button
+                              variant="ghost"
+                              onClick={() => setExpandedEngagement(expandedEngagement === index ? null : index)}
+                            >
+                              {expandedEngagement === index ? 'Hide' : 'Details'}
+                            </Button>
+                          </td>
+                        </tr>
+                        {expandedEngagement === index && (
+                          <tr>
+                            <td colSpan={8} className="py-4">
+                              <div className="p-4 bg-gray-900/70 rounded-lg border border-gray-700 space-y-3">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <h5 className="text-xs font-semibold text-gray-400 mb-1">Scope</h5>
+                                    <p className="text-sm text-gray-300">{engagement.scope}</p>
+                                  </div>
+                                  <div>
+                                    <h5 className="text-xs font-semibold text-gray-400 mb-1">Methodology</h5>
+                                    <p className="text-sm text-gray-300">{engagement.methodology}</p>
+                                  </div>
+                                </div>
+                                <div>
+                                  <h5 className="text-xs font-semibold text-gray-400 mb-1">Key Findings</h5>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    {engagement.keyFindings.map((finding, idx) => (
+                                      <li key={idx} className="text-sm text-gray-300">{finding}</li>
+                                    ))}
+                                  </ul>
+                                </div>
                               </div>
-                              <div>
-                                <h5 className="text-xs font-semibold text-gray-400 mb-1">Timeline</h5>
-                                <p className="text-sm text-gray-300">{engagement.timeline}</p>
-                              </div>
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-semibold text-gray-400 mb-1">Scope</h5>
-                              <p className="text-sm text-gray-300">{engagement.scope}</p>
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-semibold text-gray-400 mb-1">Methodology</h5>
-                              <p className="text-sm text-gray-300">{engagement.methodology}</p>
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-semibold text-gray-400 mb-1">Key Findings</h5>
-                              <ul className="list-disc list-inside space-y-1">
-                                {engagement.keyFindings.map((finding, idx) => (
-                                  <li key={idx} className="text-sm text-gray-300">{finding}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))}
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>
@@ -469,60 +463,64 @@ export default function OffensiveDashboard() {
               <CardTitle className="text-white">Recent Findings</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recentFindings.map((finding, index) => (
-                  <div key={index}>
-                    <div 
-                      className={`p-4 rounded-lg border ${getSeverityColor(finding.severity)} cursor-pointer hover:opacity-80 transition-opacity`}
-                      onClick={() => setExpandedFinding(expandedFinding === index ? null : index)}
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="text-xs font-mono text-gray-500">{finding.id}</span>
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs px-2 py-1 rounded-full ${getSeverityColor(finding.severity)}`}>
-                            {finding.severity}
-                          </span>
-                          {expandedFinding === index ? (
-                            <ChevronDown className="h-4 w-4 text-gray-400" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
-                          )}
-                        </div>
-                      </div>
-                      <h4 className="text-sm font-medium text-white mb-2">{finding.title}</h4>
-                      <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-400">CVSS: <span className="text-white font-medium">{finding.cvss}</span></span>
-                        <span className="text-gray-500">{finding.status}</span>
-                      </div>
-                    </div>
-                    <AnimatePresence>
-                      {expandedFinding === index && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="mt-2 p-4 bg-gray-900/70 rounded-lg border border-gray-700 space-y-3">
-                            <div>
-                              <h5 className="text-xs font-semibold text-gray-400 mb-1">Description</h5>
-                              <p className="text-sm text-gray-300">{finding.description}</p>
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-semibold text-gray-400 mb-1">Impact</h5>
-                              <p className="text-sm text-gray-300">{finding.impact}</p>
-                            </div>
-                            <div>
-                              <h5 className="text-xs font-semibold text-gray-400 mb-1">Remediation</h5>
-                              <p className="text-sm text-gray-300">{finding.remediation}</p>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="table w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">ID</th>
+                      <th className="py-3 pr-4">Finding</th>
+                      <th className="py-3 pr-4">Severity</th>
+                      <th className="py-3 pr-4">CVSS</th>
+                      <th className="py-3 pr-4">Status</th>
+                      <th className="py-3 pr-4">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {recentFindings.map((finding, index) => (
+                      <React.Fragment key={index}>
+                        <tr>
+                          <td className="py-3 pr-4 text-gray-400">{finding.id}</td>
+                          <td className="py-3 pr-4 text-white">{finding.title}</td>
+                          <td className="py-3 pr-4">
+                            <span className={`text-xs px-2 py-1 rounded-full ${getSeverityColor(finding.severity)}`}>
+                              {finding.severity}
+                            </span>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-400">{finding.cvss}</td>
+                          <td className="py-3 pr-4 text-gray-400">{finding.status}</td>
+                          <td className="py-3 pr-4">
+                            <Button
+                              variant="ghost"
+                              onClick={() => setExpandedFinding(expandedFinding === index ? null : index)}
+                            >
+                              {expandedFinding === index ? 'Hide' : 'Details'}
+                            </Button>
+                          </td>
+                        </tr>
+                        {expandedFinding === index && (
+                          <tr>
+                            <td colSpan={6} className="py-4">
+                              <div className="p-4 bg-gray-900/70 rounded-lg border border-gray-700 space-y-3">
+                                <div>
+                                  <h5 className="text-xs font-semibold text-gray-400 mb-1">Description</h5>
+                                  <p className="text-sm text-gray-300">{finding.description}</p>
+                                </div>
+                                <div>
+                                  <h5 className="text-xs font-semibold text-gray-400 mb-1">Impact</h5>
+                                  <p className="text-sm text-gray-300">{finding.impact}</p>
+                                </div>
+                                <div>
+                                  <h5 className="text-xs font-semibold text-gray-400 mb-1">Remediation</h5>
+                                  <p className="text-sm text-gray-300">{finding.remediation}</p>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </CardContent>
           </Card>

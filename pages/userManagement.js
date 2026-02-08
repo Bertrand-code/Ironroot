@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ironroot } from '@/lib/ironrootClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Users, UserPlus, Mail, Shield, Search, Building, Layers } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 export default function UserManagement() {
   const [user, setUser] = useState(null);
@@ -84,6 +83,22 @@ export default function UserManagement() {
     acc[groupItem.id] = groupItem.name;
     return acc;
   }, {});
+
+  const orgUserCounts = useMemo(() => {
+    return users.reduce((acc, item) => {
+      if (!item.orgId) return acc;
+      acc[item.orgId] = (acc[item.orgId] || 0) + 1;
+      return acc;
+    }, {});
+  }, [users]);
+
+  const groupUserCounts = useMemo(() => {
+    return users.reduce((acc, item) => {
+      if (!item.groupId) return acc;
+      acc[item.groupId] = (acc[item.groupId] || 0) + 1;
+      return acc;
+    }, {});
+  }, [users]);
 
   useEffect(() => {
     if (!inviteOrgId && user?.orgId) {
@@ -447,19 +462,38 @@ export default function UserManagement() {
               </Button>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
-              {orgs.map((org) => (
-                <div key={org.id} className="bg-gray-900/60 p-4 rounded-lg border border-gray-700">
-                  <h4 className="text-white font-semibold">{org.name}</h4>
-                  <p className="text-xs text-gray-500">{org.industry} • {org.size}</p>
-                  <div className="mt-2 flex items-center gap-2 text-xs">
-                    <Badge className={org.plan === 'paid' ? 'bg-green-500' : 'bg-yellow-500'}>
-                      {org.plan}
-                    </Badge>
-                    <span className="text-gray-500">Org ID: {org.id}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="table w-full text-sm text-left text-gray-300">
+                <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                  <tr>
+                    <th className="py-3 pr-4">Organization</th>
+                    <th className="py-3 pr-4">Industry</th>
+                    <th className="py-3 pr-4">Size</th>
+                    <th className="py-3 pr-4">Plan</th>
+                    <th className="py-3 pr-4">Users</th>
+                    <th className="py-3 pr-4">Org ID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {orgs.map((org) => (
+                    <tr key={org.id}>
+                      <td className="py-3 pr-4 text-white">{org.name}</td>
+                      <td className="py-3 pr-4 text-gray-400">{org.industry || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{org.size || '—'}</td>
+                      <td className="py-3 pr-4">
+                        <Badge className={org.plan === 'paid' ? 'bg-green-500' : 'bg-yellow-500'}>
+                          {org.plan}
+                        </Badge>
+                      </td>
+                      <td className="py-3 pr-4 text-gray-400">{orgUserCounts[org.id] || 0}</td>
+                      <td className="py-3 pr-4 text-gray-400">{org.id}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {orgs.length === 0 && (
+                <p className="text-sm text-gray-500 mt-4">No organizations yet.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -493,14 +527,30 @@ export default function UserManagement() {
                 Create Group
               </Button>
             </div>
-            <div className="grid md:grid-cols-2 gap-4">
-              {groups.map((group) => (
-                <div key={group.id} className="bg-gray-900/60 p-4 rounded-lg border border-gray-700">
-                  <h4 className="text-white font-semibold">{group.name}</h4>
-                  <p className="text-xs text-gray-500">{group.description}</p>
-                  <div className="mt-2 text-xs text-gray-500">Group ID: {group.id}</div>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="table w-full text-sm text-left text-gray-300">
+                <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                  <tr>
+                    <th className="py-3 pr-4">Group</th>
+                    <th className="py-3 pr-4">Description</th>
+                    <th className="py-3 pr-4">Members</th>
+                    <th className="py-3 pr-4">Group ID</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {groups.map((group) => (
+                    <tr key={group.id}>
+                      <td className="py-3 pr-4 text-white">{group.name}</td>
+                      <td className="py-3 pr-4 text-gray-400">{group.description || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{groupUserCounts[group.id] || 0}</td>
+                      <td className="py-3 pr-4 text-gray-400">{group.id}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {groups.length === 0 && (
+                <p className="text-sm text-gray-500 mt-4">No groups created yet.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -642,85 +692,6 @@ export default function UserManagement() {
               {filteredUsers.length === 0 && (
                 <p className="text-sm text-gray-500 mt-4">No users match the current filter.</p>
               )}
-            </div>
-            <div className="space-y-3">
-              {filteredUsers.map((u, index) => (
-                <motion.div
-                  key={u.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="p-4 bg-gray-900/50 rounded-lg border border-gray-700 flex justify-between items-center"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center text-white font-bold">
-                      {u.full_name?.charAt(0) || u.email?.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-white">{u.full_name || 'No name'}</h4>
-                      <p className="text-sm text-gray-400">{u.email}</p>
-                      <p className="text-xs text-gray-500">
-                        Joined: {new Date(u.created_date).toLocaleDateString()}
-                      </p>
-                      {u.orgId && (
-                        <p className="text-xs text-gray-500">
-                          Org: {orgMap[u.orgId] || u.orgId}
-                        </p>
-                      )}
-                      {u.groupId && (
-                        <p className="text-xs text-gray-500">
-                          Group: {groupMap[u.groupId] || u.groupId}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <select
-                      className="select"
-                      value={u.groupId || ''}
-                      onChange={(e) =>
-                        updateUserGroupMutation.mutate({ userId: u.id, groupId: e.target.value })
-                      }
-                    >
-                      <option value="">No group</option>
-                      {groups.map((group) => (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      className="select"
-                      value={u.orgId || ''}
-                      onChange={(e) =>
-                        updateUserOrgMutation.mutate({ userId: u.id, orgId: e.target.value })
-                      }
-                    >
-                      <option value="">No org</option>
-                      {orgs.map((org) => (
-                        <option key={org.id} value={org.id}>
-                          {org.name}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      className="select"
-                      value={u.role}
-                      onChange={(e) =>
-                        updateUserRoleMutation.mutate({ userId: u.id, newRole: e.target.value })
-                      }
-                      disabled={!canManageAdmins || u.role === 'owner'}
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                      {u.role === 'owner' && <option value="owner">Owner</option>}
-                    </select>
-                    <Badge className={u.role === 'admin' ? 'bg-red-500' : u.role === 'owner' ? 'bg-purple-500' : 'bg-blue-500'}>
-                      {u.role}
-                    </Badge>
-                  </div>
-                </motion.div>
-              ))}
             </div>
           </CardContent>
         </Card>

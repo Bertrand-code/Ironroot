@@ -138,45 +138,67 @@ export default function RiskRegister() {
                 </select>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {filteredRisks.map((risk) => (
-                    <div key={risk.id} className="p-4 bg-gray-900/50 rounded-lg border border-gray-700">
-                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                        <div>
-                          <h3 className="text-white font-semibold">{risk.title}</h3>
-                          <p className="text-xs text-gray-400">Owner: {risk.owner || 'Unassigned'}</p>
-                          <p className="text-xs text-gray-500">Due: {risk.dueDate ? new Date(risk.dueDate).toLocaleDateString() : 'Not set'}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Badge className={severityStyles[risk.severity] || 'bg-gray-700 text-gray-200'}>
-                            {risk.severity}
-                          </Badge>
-                          <Badge className={statusStyles[risk.status] || 'bg-gray-700 text-gray-200'}>
-                            {risk.status}
-                          </Badge>
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-400 mt-3">{risk.businessImpact}</p>
-                      <p className="text-xs text-gray-500 mt-2">Mitigation: {risk.mitigation}</p>
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {['open', 'mitigating', 'accepted', 'closed'].map((status) => (
-                          <Button
-                            key={status}
-                            variant="ghost"
-                            onClick={() => updateStatus(risk, status)}
-                            disabled={risk.status === status || (status === 'accepted' && user?.role !== 'owner')}
-                          >
-                            {status}
-                          </Button>
-                        ))}
-                        {user?.role !== 'owner' && (
-                          <span className="text-xs text-gray-500">Owner approval required for acceptance.</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                <div className="overflow-x-auto">
+                  <table className="table w-full text-sm text-left text-gray-300">
+                    <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                      <tr>
+                        <th className="py-3 pr-4">Risk</th>
+                        <th className="py-3 pr-4">Owner</th>
+                        <th className="py-3 pr-4">Due</th>
+                        <th className="py-3 pr-4">Severity</th>
+                        <th className="py-3 pr-4">Status</th>
+                        <th className="py-3 pr-4">Impact</th>
+                        <th className="py-3 pr-4">Mitigation</th>
+                        <th className="py-3 pr-4">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {filteredRisks.map((risk) => (
+                        <tr key={risk.id}>
+                          <td className="py-3 pr-4 text-white">{risk.title}</td>
+                          <td className="py-3 pr-4 text-gray-400">{risk.owner || 'Unassigned'}</td>
+                          <td className="py-3 pr-4 text-gray-400">
+                            {risk.dueDate ? new Date(risk.dueDate).toLocaleDateString() : 'Not set'}
+                          </td>
+                          <td className="py-3 pr-4">
+                            <Badge className={severityStyles[risk.severity] || 'bg-gray-700 text-gray-200'}>
+                              {risk.severity}
+                            </Badge>
+                          </td>
+                          <td className="py-3 pr-4">
+                            <Badge className={statusStyles[risk.status] || 'bg-gray-700 text-gray-200'}>
+                              {risk.status}
+                            </Badge>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-400" title={risk.businessImpact || ''} style={{ maxWidth: '220px' }}>
+                            {risk.businessImpact || '—'}
+                          </td>
+                          <td className="py-3 pr-4 text-gray-400" title={risk.mitigation || ''} style={{ maxWidth: '220px' }}>
+                            {risk.mitigation || '—'}
+                          </td>
+                          <td className="py-3 pr-4">
+                            <div className="flex flex-wrap gap-2">
+                              {['open', 'mitigating', 'accepted', 'closed'].map((status) => (
+                                <Button
+                                  key={status}
+                                  variant="ghost"
+                                  onClick={() => updateStatus(risk, status)}
+                                  disabled={risk.status === status || (status === 'accepted' && user?.role !== 'owner')}
+                                >
+                                  {status}
+                                </Button>
+                              ))}
+                            </div>
+                            {user?.role !== 'owner' && (
+                              <span className="text-xs text-gray-500">Owner approval required for acceptance.</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                   {filteredRisks.length === 0 && (
-                    <p className="text-sm text-gray-500">No risks match the current filter.</p>
+                    <p className="text-sm text-gray-500 mt-4">No risks match the current filter.</p>
                   )}
                 </div>
               </CardContent>

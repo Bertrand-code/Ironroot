@@ -67,6 +67,18 @@ export default function handler(req, res) {
     mimeType: document.mimeType || 'application/octet-stream',
     payloadB64Url,
   });
+  const watermarkedHash = sha256Hex(embedded.buffer);
+
+  const originalName = document.filename || 'document';
+  let outputFilename = embedded.filename;
+  if (!embedded.wrapped) {
+    const dotIndex = originalName.lastIndexOf('.');
+    if (dotIndex > 0) {
+      outputFilename = `${originalName.slice(0, dotIndex)}-watermarked${originalName.slice(dotIndex)}`;
+    } else {
+      outputFilename = `${originalName}-watermarked`;
+    }
+  }
 
   const userEmail = user?.email || 'unknown';
   const userHash = sha256Hex(Buffer.from(`${user?.fullName || ''}|${userEmail}|${issuedAt}`));
@@ -83,7 +95,8 @@ export default function handler(req, res) {
     userEmail,
     userHash,
     wrapped: embedded.wrapped,
-    outputFilename: embedded.filename,
+    outputFilename,
+    watermarkedHash,
     orgId,
   };
 
@@ -95,7 +108,7 @@ export default function handler(req, res) {
     ok: true,
     watermarked: {
       contentBase64: embedded.buffer.toString('base64'),
-      filename: embedded.filename,
+      filename: outputFilename,
       mimeType: embedded.mimeType,
       wrapped: embedded.wrapped,
     },

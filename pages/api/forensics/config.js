@@ -16,12 +16,13 @@ export default function handler(req, res) {
         ownerEmail: orgConfig.ownerEmail,
         forensicWatermarkingEnabled: !!orgConfig.forensicWatermarkingEnabled,
         secretConfigured: !!orgConfig.forensicWatermarkSecret,
+        allowAdminVerify: !!orgConfig.allowAdminVerify,
       },
     });
   }
 
   if (req.method === 'POST') {
-    const { orgId, ownerEmail, enable } = req.body || {};
+    const { orgId, ownerEmail, enable, allowAdminVerify } = req.body || {};
     if (!orgId) {
       return res.status(400).json({ ok: false, error: 'orgId is required' });
     }
@@ -29,6 +30,9 @@ export default function handler(req, res) {
     const orgConfig = ensureOrgConfig(store, orgId, ownerEmail);
     if (typeof enable === 'boolean') {
       orgConfig.forensicWatermarkingEnabled = enable;
+    }
+    if (typeof allowAdminVerify === 'boolean') {
+      orgConfig.allowAdminVerify = allowAdminVerify;
     }
     if (orgConfig.forensicWatermarkingEnabled && !orgConfig.forensicWatermarkSecret) {
       orgConfig.forensicWatermarkSecret = generateSecret();
@@ -43,6 +47,7 @@ export default function handler(req, res) {
         ownerEmail: orgConfig.ownerEmail,
         forensicWatermarkingEnabled: !!orgConfig.forensicWatermarkingEnabled,
         secretConfigured: !!orgConfig.forensicWatermarkSecret,
+        allowAdminVerify: !!orgConfig.allowAdminVerify,
       },
     });
   }
@@ -50,4 +55,3 @@ export default function handler(req, res) {
   res.setHeader('Allow', 'GET, POST');
   return res.status(405).json({ ok: false, error: 'Method not allowed' });
 }
-

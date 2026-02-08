@@ -97,6 +97,7 @@ export default function DocumentVaultPage() {
   }, [watermarkEvents]);
 
   const watermarkingEnabled = watermarkFeatureEnabled && watermarkConfig?.forensicWatermarkingEnabled;
+  const canVerifyWatermark = isOwner || (isAdmin && watermarkConfig?.allowAdminVerify);
 
   const sandboxEnrich = async ({ docId, docHash, filename, mimeType }) => {
     const heuristic = classifyFileRisk({ filename, mimeType });
@@ -276,7 +277,7 @@ export default function DocumentVaultPage() {
     try {
       const buffer = await file.arrayBuffer();
       const bytes = new Uint8Array(buffer);
-      if (!isOwner) {
+      if (!canVerifyWatermark) {
         const fileHash = await sha256Hex(bytes);
         await ironroot.integrations.Forensics.requests.create({
           orgId: org?.id,
@@ -306,9 +307,17 @@ export default function DocumentVaultPage() {
         return;
       }
 
+      const matchMethod = result?.result?.matchMethod || 'embedded';
+      const signatureValid = result?.result?.signatureValid;
+      const message = matchMethod === 'hash'
+        ? 'Watermark verified via hash match.'
+        : signatureValid
+          ? 'Watermark verified.'
+          : 'Watermark found but signature is invalid (possible tampering).';
+
       setVerifyState({
         status: 'ok',
-        message: result?.result?.signatureValid ? 'Watermark verified.' : 'Watermark found but signature is invalid (possible tampering).',
+        message,
         details: result?.result || null,
       });
     } catch (err) {
@@ -518,9 +527,9 @@ export default function DocumentVaultPage() {
                       )}
                     </div>
                   )}
-                  {!isOwner && (
+                  {!canVerifyWatermark && (
                     <p className="card__meta">
-                      Only the organization owner can verify forensic watermarks. Uploading a file will create a verification request for owner approval.
+                      Only the organization owner (or approved admins) can verify forensic watermarks. Uploading a file will create a verification request for owner approval.
                     </p>
                   )}
                 </div>

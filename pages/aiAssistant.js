@@ -11,7 +11,7 @@ export default function AISecurityAssistant() {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: '👋 Hi! I\'m your AI Security Assistant. I can help you with:\n\n• **Vulnerability Analysis** - Explain security findings\n• **Remediation Guidance** - How to fix security issues\n• **Security Best Practices** - OWASP, secure coding\n• **Threat Intelligence** - Latest CVEs and exploits\n• **Compliance Questions** - PCI DSS, SOC 2, HIPAA\n\nWhat security question can I help you with today?'
+      content: '👋 Hi! I\'m Vansh, your AI Security Assistant. I can help you with:\n\n• **Vulnerability Analysis** - Explain security findings\n• **Remediation Guidance** - How to fix security issues\n• **Security Best Practices** - OWASP, secure coding\n• **Threat Intelligence** - Latest CVEs and exploits\n• **Compliance Questions** - PCI DSS, SOC 2, HIPAA\n\nWhat security question can I help you with today?'
     }
   ]);
   const [input, setInput] = useState('');
@@ -43,7 +43,7 @@ export default function AISecurityAssistant() {
 
     try {
       const response = await ironroot.integrations.Core.InvokeLLM({
-        prompt: `You are a world-class cybersecurity expert and AI assistant specializing in application security, penetration testing, and secure coding practices. You have deep knowledge of:
+        prompt: `You are Vansh, a world-class cybersecurity expert and AI assistant specializing in application security, penetration testing, and secure coding practices. You have deep knowledge of:
 
 - OWASP Top 10, CWE, CVE databases
 - Penetration testing methodologies (PTES, OWASP Testing Guide)
@@ -53,7 +53,7 @@ export default function AISecurityAssistant() {
 - Threat modeling and risk assessment
 - Security tools (Burp Suite, Metasploit, Nmap, etc.)
 
-Provide expert, actionable security advice. Include code examples when relevant. Be technical but clear.
+Provide expert, actionable security advice. Include code examples when relevant. Be technical but clear. Do not speculate; say "unknown" if you are unsure. Start with a direct answer to the user's question.
 
 User question: ${input}`,
         add_context_from_internet: true
@@ -86,7 +86,7 @@ User question: ${input}`,
               <Brain className="h-12 w-12 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">AI Security Assistant</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Vansh • AI Security Assistant</h1>
           <p className="text-gray-400">Expert cybersecurity guidance powered by advanced AI</p>
         </div>
 
@@ -139,23 +139,24 @@ User question: ${input}`,
                       }`}
                     >
                       {msg.role === 'assistant' ? (
-                        <ReactMarkdown
-                          className="prose prose-sm prose-invert max-w-none"
-                          components={{
-                            code: ({ inline, children }) =>
-                              inline ? (
-                                <code className="bg-gray-800 px-1 py-0.5 rounded text-red-400">
-                                  {children}
-                                </code>
-                              ) : (
-                                <pre className="bg-gray-800 p-3 rounded-lg overflow-x-auto">
-                                  <code className="text-gray-300">{children}</code>
-                                </pre>
-                              ),
-                          }}
-                        >
-                          {msg.content}
-                        </ReactMarkdown>
+                        <div className="prose prose-sm prose-invert max-w-none">
+                          <ReactMarkdown
+                            components={{
+                              code: ({ inline, children }) =>
+                                inline ? (
+                                  <code className="bg-gray-800 px-1 py-0.5 rounded text-red-400">
+                                    {children}
+                                  </code>
+                                ) : (
+                                  <pre className="bg-gray-800 p-3 rounded-lg overflow-x-auto">
+                                    <code className="text-gray-300">{children}</code>
+                                  </pre>
+                                ),
+                            }}
+                          >
+                            {msg.content}
+                          </ReactMarkdown>
+                        </div>
                       ) : (
                         <p className="text-sm">{msg.content}</p>
                       )}

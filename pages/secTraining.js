@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, Shield, BookOpen, AlertTriangle, Eye, Pencil } from 'lucide-react';
+import { Shield, BookOpen, AlertTriangle, Eye, Pencil, Sparkles, Upload, UserPlus, Calendar } from 'lucide-react';
 import AuthGate from '@/components/AuthGate';
 import { ironroot } from '@/lib/ironrootClient';
 import { useAuth } from '@/lib/useAuth';
@@ -43,8 +43,22 @@ const getEventStatus = (event) => {
   return 'unknown';
 };
 
+const parseCsv = (text) => {
+  const lines = text.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map((h) => h.trim().toLowerCase());
+  return lines.slice(1).map((line) => {
+    const values = line.split(',').map((v) => v.trim());
+    const row = {};
+    headers.forEach((header, idx) => {
+      row[header] = values[idx] || '';
+    });
+    return row;
+  });
+};
+
 export default function SecurityTraining() {
-  const { user } = useAuth();
+  const { user, org } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('campaigns');
@@ -54,6 +68,30 @@ export default function SecurityTraining() {
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [templateDraft, setTemplateDraft] = useState(null);
   const [saveState, setSaveState] = useState('');
+  const [campaignDraft, setCampaignDraft] = useState({
+    name: '',
+    templateId: '',
+    targetGroupId: '',
+    startAt: '',
+    endAt: '',
+  });
+  const [aiForm, setAiForm] = useState({
+    scenario: 'credential verification',
+    brand: 'Ironroot',
+    tone: 'urgent but professional',
+    difficulty: 'Medium',
+    vector: 'Email',
+  });
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState('');
+  const [manualUser, setManualUser] = useState({
+    name: '',
+    email: '',
+    role: 'user',
+    orgId: '',
+    groupId: '',
+  });
+  const [importStatus, setImportStatus] = useState('');
 
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
@@ -115,6 +153,18 @@ export default function SecurityTraining() {
     }
   }, [selectedTemplateId, templates]);
 
+  useEffect(() => {
+    if (!campaignDraft.templateId && templates.length) {
+      setCampaignDraft((prev) => ({ ...prev, templateId: templates[0].id }));
+    }
+  }, [templates, campaignDraft.templateId]);
+
+  useEffect(() => {
+    if (!manualUser.orgId && orgs.length) {
+      setManualUser((prev) => ({ ...prev, orgId: org?.id || orgs[0].id }));
+    }
+  }, [orgs, manualUser.orgId, org]);
+
   const campaignRows = useMemo(() => {
     return campaigns.map((campaign) => {
       const template = templateMap[campaign.templateId];
@@ -131,7 +181,8 @@ export default function SecurityTraining() {
         ...campaign,
         templateName: template?.name || campaign.templateName || 'Template',
         target,
-        launchDate: campaign.launchDate || campaign.launch || '—',
+        startAt: campaign.startAt || campaign.launchDate || '—',
+        endAt: campaign.endAt || '—',
         openRate,
         clickRate,
         reportRate,
@@ -238,14 +289,126 @@ export default function SecurityTraining() {
   }, [orgs, users]);
 
   const handleTemplateSave = async () => {
-    if (!templateDraft?.id) return;
+    if (!templateDraft) return;
     setSaveState('Saving...');
-    await ironroot.entities.TrainingTemplate.update(templateDraft.id, {
-      ...templateDraft,
+    const existing = templates.find((item) => item.id === templateDraft.id);
+    if (existing) {
+      await ironroot.entities.TrainingTemplate.update(templateDraft.id, {
+        ...templateDraft,
+        updated: new Date().toISOString().slice(0, 10),
+      });
+      setSaveState('Saved');
+      queryClient.invalidateQueries({ queryKey: ['trainingTemplates'] });
+      return;
+    }
+    const { id, ...payload } = templateDraft;
+    const created = await ironroot.entities.TrainingTemplate.create({
+      ...payload,
       updated: new Date().toISOString().slice(0, 10),
     });
     setSaveState('Saved');
+    setSelectedTemplateId(created.id);
     queryClient.invalidateQueries({ queryKey: ['trainingTemplates'] });
+  };
+
+  const handleGenerateTemplate = async () => {
+    setAiLoading(true);
+    setAiError('');
+    try {
+      const response = await fetch('/api/training/generateTemplate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(aiForm),
+      });
+      const data = await response.json();
+      if (!response.ok || !data?.template) {
+        throw new Error(data?.error || 'Unable to generate template');
+      }
+      setTemplateDraft({
+        ...data.template,
+        id: null,
+      });
+      setSelectedTemplateId('');
+      setSaveState('Generated');
+    } catch (error) {
+      setAiError(error.message || 'Failed to generate template');
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  const handleCampaignLaunch = async () => {
+    if (!campaignDraft.name.trim()) return;
+    if (!campaignDraft.templateId) return;
+    const startAt = campaignDraft.startAt ? new Date(campaignDraft.startAt).toISOString() : null;
+    const endAt = campaignDraft.endAt ? new Date(campaignDraft.endAt).toISOString() : null;
+    const status = startAt && new Date(startAt) > new Date() ? 'Scheduled' : 'Active';
+    await ironroot.entities.TrainingCampaign.create({
+      name: campaignDraft.name,
+      templateId: campaignDraft.templateId,
+      targetGroupId: campaignDraft.targetGroupId || null,
+      startAt,
+      endAt,
+      status,
+      launchDate: startAt ? startAt.slice(0, 10) : new Date().toISOString().slice(0, 10),
+      ownerEmail: user?.email,
+    });
+    setCampaignDraft({ name: '', templateId: campaignDraft.templateId, targetGroupId: '', startAt: '', endAt: '' });
+    queryClient.invalidateQueries({ queryKey: ['trainingCampaigns'] });
+  };
+
+  const handleAddUser = async () => {
+    if (!manualUser.email.trim()) return;
+    await ironroot.entities.User.create({
+      fullName: manualUser.name,
+      email: manualUser.email,
+      role: manualUser.role || 'user',
+      orgId: manualUser.orgId || org?.id || null,
+      groupId: manualUser.groupId || null,
+    });
+    setManualUser({ name: '', email: '', role: 'user', orgId: manualUser.orgId, groupId: '' });
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+  };
+
+  const handleCsvUpload = async (file) => {
+    if (!file) return;
+    setImportStatus('Importing...');
+    const text = await file.text();
+    const rows = parseCsv(text);
+    if (!rows.length) {
+      setImportStatus('No valid rows found in CSV.');
+      return;
+    }
+    for (const row of rows) {
+      const email = row.email || row.mail || row.user || '';
+      if (!email) continue;
+      const orgName = row.org || row.company || '';
+      const groupName = row.group || row.team || '';
+      const orgId = orgs.find((orgItem) => orgItem.name.toLowerCase() === orgName.toLowerCase())?.id || manualUser.orgId || org?.id || null;
+      const groupId = groups.find((group) => group.name.toLowerCase() === groupName.toLowerCase())?.id || null;
+      await ironroot.entities.User.create({
+        fullName: row.name || row.fullname || row.full_name || '',
+        email,
+        role: row.role || 'user',
+        orgId,
+        groupId,
+      });
+    }
+    queryClient.invalidateQueries({ queryKey: ['users'] });
+    setImportStatus(`Imported ${rows.length} user record(s).`);
+  };
+
+  const handleDownloadTemplate = () => {
+    const csv = 'email,name,role,org,group\n';
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'ironroot-training-import.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const summaryStats = useMemo(() => {
@@ -319,7 +482,8 @@ export default function SecurityTraining() {
                             <th className="py-3 pr-4">Template</th>
                             <th className="py-3 pr-4">Target</th>
                             <th className="py-3 pr-4">Status</th>
-                            <th className="py-3 pr-4">Launch</th>
+                            <th className="py-3 pr-4">Start</th>
+                            <th className="py-3 pr-4">End</th>
                             <th className="py-3 pr-4">Open Rate</th>
                             <th className="py-3 pr-4">Click Rate</th>
                             <th className="py-3 pr-4">Report Rate</th>
@@ -336,7 +500,8 @@ export default function SecurityTraining() {
                                   {campaign.status}
                                 </span>
                               </td>
-                              <td className="py-3 pr-4 text-gray-400">{campaign.launchDate}</td>
+                              <td className="py-3 pr-4 text-gray-400">{campaign.startAt ? formatTimestamp(campaign.startAt) : '—'}</td>
+                              <td className="py-3 pr-4 text-gray-400">{campaign.endAt ? formatTimestamp(campaign.endAt) : '—'}</td>
                               <td className="py-3 pr-4 text-gray-400">{campaign.openRate}</td>
                               <td className="py-3 pr-4 text-gray-400">{campaign.clickRate}</td>
                               <td className="py-3 pr-4 text-gray-400">{campaign.reportRate}</td>
@@ -356,23 +521,56 @@ export default function SecurityTraining() {
                     <p className="card__meta">
                       Launch new simulations with Gophish-style templates and multi-stage follow-ups.
                     </p>
-                    <Input placeholder="Campaign name" className="bg-gray-900 border-gray-700 text-white" />
-                    <select className="select">
+                    <Input
+                      placeholder="Campaign name"
+                      value={campaignDraft.name}
+                      onChange={(e) => setCampaignDraft((prev) => ({ ...prev, name: e.target.value }))}
+                      className="bg-gray-900 border-gray-700 text-white"
+                    />
+                    <select
+                      className="select"
+                      value={campaignDraft.templateId}
+                      onChange={(e) => setCampaignDraft((prev) => ({ ...prev, templateId: e.target.value }))}
+                    >
                       <option>Choose template</option>
                       {templates.map((template) => (
-                        <option key={template.id}>{template.name}</option>
+                        <option key={template.id} value={template.id}>{template.name}</option>
                       ))}
                     </select>
-                    <select className="select">
-                      <option>Target group</option>
+                    <select
+                      className="select"
+                      value={campaignDraft.targetGroupId}
+                      onChange={(e) => setCampaignDraft((prev) => ({ ...prev, targetGroupId: e.target.value }))}
+                    >
+                      <option value="">Target group</option>
                       {groups.map((group) => (
-                        <option key={group.id}>{group.name}</option>
+                        <option key={group.id} value={group.id}>{group.name}</option>
                       ))}
-                      <option>All Staff</option>
+                      <option value="">All Staff</option>
                     </select>
-                    <Button className="bg-red-600 hover:bg-red-700">
-                      <Mail className="mr-2 h-4 w-4" />
-                      Launch Campaign
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-500">Start time</label>
+                        <Input
+                          type="datetime-local"
+                          value={campaignDraft.startAt}
+                          onChange={(e) => setCampaignDraft((prev) => ({ ...prev, startAt: e.target.value }))}
+                          className="bg-gray-900 border-gray-700 text-white"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs text-gray-500">End time</label>
+                        <Input
+                          type="datetime-local"
+                          value={campaignDraft.endAt}
+                          onChange={(e) => setCampaignDraft((prev) => ({ ...prev, endAt: e.target.value }))}
+                          className="bg-gray-900 border-gray-700 text-white"
+                        />
+                      </div>
+                    </div>
+                    <Button className="bg-red-600 hover:bg-red-700" onClick={handleCampaignLaunch}>
+                      <Calendar className="mr-2 h-4 w-4" />
+                      Schedule Campaign
                     </Button>
                   </CardContent>
                 </Card>
@@ -538,6 +736,57 @@ export default function SecurityTraining() {
                 </Card>
 
                 <div className="space-y-6">
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white">AI Template Studio</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="card__meta">Generate sophisticated templates using Gemini, then edit and preview before saving.</p>
+                      <Input
+                        value={aiForm.scenario}
+                        onChange={(e) => setAiForm((prev) => ({ ...prev, scenario: e.target.value }))}
+                        className="bg-gray-900 border-gray-700 text-white"
+                        placeholder="Scenario"
+                      />
+                      <Input
+                        value={aiForm.brand}
+                        onChange={(e) => setAiForm((prev) => ({ ...prev, brand: e.target.value }))}
+                        className="bg-gray-900 border-gray-700 text-white"
+                        placeholder="Brand style"
+                      />
+                      <Input
+                        value={aiForm.tone}
+                        onChange={(e) => setAiForm((prev) => ({ ...prev, tone: e.target.value }))}
+                        className="bg-gray-900 border-gray-700 text-white"
+                        placeholder="Tone"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          className="select"
+                          value={aiForm.difficulty}
+                          onChange={(e) => setAiForm((prev) => ({ ...prev, difficulty: e.target.value }))}
+                        >
+                          <option>Low</option>
+                          <option>Medium</option>
+                          <option>High</option>
+                        </select>
+                        <select
+                          className="select"
+                          value={aiForm.vector}
+                          onChange={(e) => setAiForm((prev) => ({ ...prev, vector: e.target.value }))}
+                        >
+                          <option>Email</option>
+                          <option>Email + SMS</option>
+                        </select>
+                      </div>
+                      {aiError && <div className="text-xs text-red-400">{aiError}</div>}
+                      <Button className="bg-red-600 hover:bg-red-700" onClick={handleGenerateTemplate} disabled={aiLoading}>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        {aiLoading ? 'Generating...' : 'Generate Template'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
                   <Card className="bg-gray-800 border-gray-700">
                     <CardHeader>
                       <CardTitle className="text-white">Template Editor</CardTitle>
@@ -726,37 +975,110 @@ export default function SecurityTraining() {
                   </CardContent>
                 </Card>
 
-                <Card className="bg-gray-800 border-gray-700">
-                  <CardHeader>
-                    <CardTitle className="text-white">Company Coverage</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="table w-full text-sm text-left text-gray-300">
-                        <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
-                          <tr>
-                            <th className="py-3 pr-4">Company</th>
-                            <th className="py-3 pr-4">Plan</th>
-                            <th className="py-3 pr-4">Users</th>
-                            <th className="py-3 pr-4">Completion</th>
-                            <th className="py-3 pr-4">Risk</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-800">
-                          {orgDirectory.map((orgRow) => (
-                            <tr key={orgRow.id}>
-                              <td className="py-3 pr-4 text-white">{orgRow.name}</td>
-                              <td className="py-3 pr-4 text-gray-400">{orgRow.plan}</td>
-                              <td className="py-3 pr-4 text-gray-400">{orgRow.users}</td>
-                              <td className="py-3 pr-4 text-gray-400">{orgRow.completionRate}</td>
-                              <td className="py-3 pr-4 text-gray-400">{orgRow.riskScore}</td>
+                <div className="space-y-6">
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white">Add User</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <Input
+                        placeholder="Full name"
+                        value={manualUser.name}
+                        onChange={(e) => setManualUser((prev) => ({ ...prev, name: e.target.value }))}
+                        className="bg-gray-900 border-gray-700 text-white"
+                      />
+                      <Input
+                        placeholder="Email"
+                        value={manualUser.email}
+                        onChange={(e) => setManualUser((prev) => ({ ...prev, email: e.target.value }))}
+                        className="bg-gray-900 border-gray-700 text-white"
+                      />
+                      <select
+                        className="select"
+                        value={manualUser.role}
+                        onChange={(e) => setManualUser((prev) => ({ ...prev, role: e.target.value }))}
+                      >
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <select
+                        className="select"
+                        value={manualUser.orgId}
+                        onChange={(e) => setManualUser((prev) => ({ ...prev, orgId: e.target.value }))}
+                      >
+                        {orgs.map((orgItem) => (
+                          <option key={orgItem.id} value={orgItem.id}>{orgItem.name}</option>
+                        ))}
+                      </select>
+                      <select
+                        className="select"
+                        value={manualUser.groupId}
+                        onChange={(e) => setManualUser((prev) => ({ ...prev, groupId: e.target.value }))}
+                      >
+                        <option value="">Group (optional)</option>
+                        {groups.map((group) => (
+                          <option key={group.id} value={group.id}>{group.name}</option>
+                        ))}
+                      </select>
+                      <Button className="bg-red-600 hover:bg-red-700" onClick={handleAddUser}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Add User
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white">Bulk Upload</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="card__meta">Upload CSV with headers: email,name,role,org,group</p>
+                      <Input
+                        type="file"
+                        accept=".csv"
+                        onChange={(e) => handleCsvUpload(e.target.files?.[0])}
+                        className="bg-gray-900 border-gray-700 text-white"
+                      />
+                      {importStatus && <div className="text-xs text-gray-400">{importStatus}</div>}
+                      <Button variant="outline" onClick={handleDownloadTemplate}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Download CSV Template
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gray-800 border-gray-700">
+                    <CardHeader>
+                      <CardTitle className="text-white">Company Coverage</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto">
+                        <table className="table w-full text-sm text-left text-gray-300">
+                          <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                            <tr>
+                              <th className="py-3 pr-4">Company</th>
+                              <th className="py-3 pr-4">Plan</th>
+                              <th className="py-3 pr-4">Users</th>
+                              <th className="py-3 pr-4">Completion</th>
+                              <th className="py-3 pr-4">Risk</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
+                          </thead>
+                          <tbody className="divide-y divide-gray-800">
+                            {orgDirectory.map((orgRow) => (
+                              <tr key={orgRow.id}>
+                                <td className="py-3 pr-4 text-white">{orgRow.name}</td>
+                                <td className="py-3 pr-4 text-gray-400">{orgRow.plan}</td>
+                                <td className="py-3 pr-4 text-gray-400">{orgRow.users}</td>
+                                <td className="py-3 pr-4 text-gray-400">{orgRow.completionRate}</td>
+                                <td className="py-3 pr-4 text-gray-400">{orgRow.riskScore}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
               </div>
             </TabsContent>
           </Tabs>

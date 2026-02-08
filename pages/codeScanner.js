@@ -19,12 +19,15 @@ export default function CodeScanner() {
   const [scanning, setScanning] = useState(false);
   const [scanResults, setScanResults] = useState(null);
   const [error, setError] = useState('');
+  const [semgrepDeploymentId, setSemgrepDeploymentId] = useState('');
+  const [semgrepLoading, setSemgrepLoading] = useState(false);
+  const [semgrepError, setSemgrepError] = useState('');
   const [expandedVulns, setExpandedVulns] = useState({});
   const [hasAccess, setHasAccess] = useState(false);
   const [accessStatus, setAccessStatus] = useState({ type: '', message: '' });
   const { user } = useAuth();
 
-  const simulateScan = ({ target, mode }) => {
+  const simulateScan = ({ target, mode, semgrepFindings = [] }) => {
     const findings = [
       {
         severity: 'critical',
@@ -107,9 +110,12 @@ export default function CodeScanner() {
           'Enable `Content-Security-Policy`, `X-Frame-Options`, and `Referrer-Policy` headers.',
         references: ['OWASP Security Headers'],
       },
-    ];;
+    ];
 
-    const summary = findings.reduce(
+    const semgrepVulns = Array.isArray(semgrepFindings) ? semgrepFindings : [];
+    const allFindings = [...findings, ...semgrepVulns];
+
+    const summary = allFindings.reduce(
       (acc, finding) => {
         acc[finding.severity] += 1;
         acc.total += 1;
@@ -152,10 +158,71 @@ export default function CodeScanner() {
       target,
       mode,
       summary,
-      vulnerabilities: findings,
-      coverage: ['SAST', 'SCA', 'Secrets', 'IaC', 'API Security', 'Semgrep Rules', 'Misconfigurations'],
+      vulnerabilities: allFindings,
+      coverage: [
+        'SAST',
+        'SCA',
+        'Secrets',
+        'IaC',
+        'API Security',
+        semgrepVulns.length ? 'Semgrep Cloud' : 'Semgrep Rules',
+        'Misconfigurations',
+      ],
       repoSummary,
     };
+  };
+
+  const normalizeSemgrepFindings = (payload) => {
+    if (!payload) return [];
+    if (Array.isArray(payload.findings)) return payload.findings;
+    if (Array.isArray(payload.results)) return payload.results;
+    if (Array.isArray(payload.data?.findings)) return payload.data.findings;
+    if (Array.isArray(payload.data?.results)) return payload.data.results;
+    return [];
+  };
+
+  const mapSemgrepFinding = (finding, index) => {
+    const severityRaw = (finding.severity || finding?.metadata?.severity || finding?.rule?.severity || '').toLowerCase();
+    const severityMap = { error: 'high', warning: 'medium', info: 'low' };
+    const severity = ['critical', 'high', 'medium', 'low'].includes(severityRaw)
+      ? severityRaw
+      : severityMap[severityRaw] || 'medium';
+    const filePath = finding.path || finding?.location?.path || finding?.metadata?.path || 'unknown';
+    const lineNumber = finding.line || finding?.location?.line || finding?.start?.line || null;
+    const ruleId = finding.check_id || finding.rule_id || finding?.metadata?.rule_id || `semgrep-${index + 1}`;
+    const message = finding.message || finding?.metadata?.message || finding?.rule?.message || 'Semgrep Cloud finding';
+    return {
+      severity,
+      title: message,
+      category: 'Semgrep Cloud',
+      ruleId,
+      filePath,
+      lineNumber,
+      description: message,
+      remediation: finding?.metadata?.fix || 'Review the rule guidance and apply the recommended fix.',
+      references: finding?.metadata?.references || [],
+      source: 'Semgrep Cloud',
+    };
+  };
+
+  const fetchSemgrepFindings = async (deploymentId) => {
+    if (!deploymentId) return [];
+    setSemgrepLoading(true);
+    setSemgrepError('');
+    try {
+      const response = await fetch(`/api/semgrep/findings?deploymentId=${encodeURIComponent(deploymentId)}`);
+      const data = await response.json();
+      if (!response.ok || data?.ok === false) {
+        throw new Error(data?.error || 'Semgrep request failed');
+      }
+      const rawFindings = normalizeSemgrepFindings(data?.data || data);
+      return rawFindings.map(mapSemgrepFinding);
+    } catch (err) {
+      setSemgrepError(err.message || 'Semgrep request failed');
+      return [];
+    } finally {
+      setSemgrepLoading(false);
+    }
   };
 
   const categorizeVuln = (vuln) => {
@@ -324,7 +391,11 @@ export default function CodeScanner() {
 
     try {
       const scanType = isGithub ? 'github_repository' : 'website';
-      const analysis = simulateScan({ target: urlTrimmed, mode: scanType });
+      const semgrepFindings = semgrepDeploymentId ? await fetchSemgrepFindings(semgrepDeploymentId) : [];
+      const analysis = simulateScan({ target: urlTrimmed, mode: scanType, semgrepFindings });
+      analysis.semgrep = semgrepDeploymentId
+        ? { deploymentId: semgrepDeploymentId, findings: semgrepFindings.length }
+        : null;
 
       setScanResults(analysis);
 
@@ -489,6 +560,18 @@ export default function CodeScanner() {
                   onChange={(e) => setTargetUrl(e.target.value)}
                   className="bg-gray-900 border-gray-700 text-white"
                 />
+                <div className="mt-3">
+                  <Input
+                    placeholder="Semgrep deployment id (optional)"
+                    value={semgrepDeploymentId}
+                    onChange={(e) => setSemgrepDeploymentId(e.target.value)}
+                    className="bg-gray-900 border-gray-700 text-white"
+                  />
+                  <div className="text-xs text-gray-500 mt-2">
+                    Pull Semgrep Cloud findings into the scan report when available.
+                  </div>
+                  {semgrepError && <div className="text-xs text-red-400 mt-1">{semgrepError}</div>}
+                </div>
                 <div className="text-xs text-gray-500 mt-2 space-y-1">
                   <p>• <strong>Website URL</strong>: Infrastructure scan (Nuclei, Nmap, DNS recon)</p>
                   <p>• <strong>GitHub URL</strong>: Code security scan (Snyk, Semgrep, Veracode)</p>

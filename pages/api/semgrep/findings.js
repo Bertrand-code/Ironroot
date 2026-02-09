@@ -4,7 +4,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
   }
 
-  const { deploymentId } = req.query;
+  const deploymentId = req.query.deploymentId || process.env.SEMGREP_DEPLOYMENT_ID;
   if (!deploymentId) {
     return res.status(400).json({ ok: false, error: 'deploymentId is required' });
   }

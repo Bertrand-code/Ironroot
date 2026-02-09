@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { ironroot } from '@/lib/ironrootClient';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, GitBranch, AlertTriangle, CheckCircle, Clock, Loader2, FileCode, Shield, ChevronDown, ChevronUp, ExternalLink, Globe, Calendar } from 'lucide-react';
+import { Upload, GitBranch, AlertTriangle, CheckCircle, Clock, Loader2, FileCode, Shield, ChevronDown, ChevronUp, ExternalLink, Globe, Calendar, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import ScanScheduler from '../components/Scheduling/Scheduler';
 import NotificationBell from '../components/Notifications/NotificationBell';
 import { useAuth } from '@/lib/useAuth';
@@ -19,9 +20,11 @@ export default function CodeScanner() {
   const [scanning, setScanning] = useState(false);
   const [scanResults, setScanResults] = useState(null);
   const [error, setError] = useState('');
-  const [semgrepDeploymentId, setSemgrepDeploymentId] = useState('');
   const [semgrepLoading, setSemgrepLoading] = useState(false);
   const [semgrepError, setSemgrepError] = useState('');
+  const [semgrepHealth, setSemgrepHealth] = useState({ status: 'unknown', message: 'Checking...', deploymentId: null, lastChecked: null, latencyMs: null, lastSync: null });
+  const [aiSummaries, setAiSummaries] = useState({});
+  const [aiSummaryLoading, setAiSummaryLoading] = useState({});
   const [expandedVulns, setExpandedVulns] = useState({});
   const [hasAccess, setHasAccess] = useState(false);
   const [accessStatus, setAccessStatus] = useState({ type: '', message: '' });
@@ -207,11 +210,11 @@ export default function CodeScanner() {
   };
 
   const fetchSemgrepFindings = async (deploymentId) => {
-    if (!deploymentId) return [];
+    const query = deploymentId ? `?deploymentId=${encodeURIComponent(deploymentId)}` : '';
     setSemgrepLoading(true);
     setSemgrepError('');
     try {
-      const response = await fetch(`/api/semgrep/findings?deploymentId=${encodeURIComponent(deploymentId)}`);
+      const response = await fetch(`/api/semgrep/findings${query}`);
       const data = await response.json();
       if (!response.ok || data?.ok === false) {
         throw new Error(data?.error || 'Semgrep request failed');
@@ -223,6 +226,59 @@ export default function CodeScanner() {
       return [];
     } finally {
       setSemgrepLoading(false);
+    }
+  };
+
+  const refreshSemgrepHealth = async () => {
+    try {
+      const response = await fetch('/api/semgrep/health');
+      const data = await response.json();
+      if (!response.ok || data?.ok === false) {
+        setSemgrepHealth((prev) => ({
+          ...prev,
+          status: 'not_configured',
+          message: data?.error || 'Semgrep not configured',
+          deploymentId: data?.deploymentId || null,
+          lastChecked: data?.checkedAt || new Date().toISOString(),
+          latencyMs: data?.latencyMs || null,
+        }));
+        return;
+      }
+      setSemgrepHealth((prev) => ({
+        ...prev,
+        status: 'connected',
+        message: 'Connected',
+        deploymentId: data?.deploymentId || null,
+        lastChecked: data?.checkedAt || new Date().toISOString(),
+        latencyMs: data?.latencyMs || null,
+      }));
+    } catch (error) {
+      setSemgrepHealth((prev) => ({
+        ...prev,
+        status: 'error',
+        message: error.message || 'Semgrep health check failed',
+        lastChecked: new Date().toISOString(),
+      }));
+    }
+  };
+
+  const requestAiSummary = async (index, vuln) => {
+    setAiSummaryLoading((prev) => ({ ...prev, [index]: true }));
+    try {
+      const response = await fetch('/api/ai/findingSummary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ finding: vuln }),
+      });
+      const data = await response.json();
+      if (!response.ok || data?.ok === false) {
+        throw new Error(data?.error || 'AI summary failed');
+      }
+      setAiSummaries((prev) => ({ ...prev, [index]: data.summary || data }));
+    } catch (error) {
+      setAiSummaries((prev) => ({ ...prev, [index]: { summary: 'Unable to generate AI summary right now.', error: true } }));
+    } finally {
+      setAiSummaryLoading((prev) => ({ ...prev, [index]: false }));
     }
   };
 
@@ -251,6 +307,14 @@ export default function CodeScanner() {
 
   React.useEffect(() => {
     checkUserAccess();
+  }, []);
+
+  React.useEffect(() => {
+    refreshSemgrepHealth();
+    const interval = setInterval(() => {
+      refreshSemgrepHealth();
+    }, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   const checkUserAccess = async () => {
@@ -334,7 +398,17 @@ export default function CodeScanner() {
     setError('');
     
     try {
-      const analysis = simulateScan({ target: file.name, mode: 'file' });
+      const semgrepFindings = await fetchSemgrepFindings();
+      const semgrepConnected = semgrepHealth.status === 'connected' || semgrepFindings.length > 0;
+      const analysis = simulateScan({ target: file.name, mode: 'file', semgrepFindings });
+      analysis.semgrep = {
+        connected: semgrepConnected,
+        deploymentId: semgrepHealth.deploymentId,
+        findings: semgrepFindings.length,
+        lastSync: new Date().toISOString(),
+      };
+      setSemgrepHealth((prev) => ({ ...prev, lastSync: analysis.semgrep.lastSync }));
+      refreshSemgrepHealth();
 
       setScanResults(analysis);
       
@@ -392,11 +466,19 @@ export default function CodeScanner() {
 
     try {
       const scanType = isGithub ? 'github_repository' : 'website';
-      const semgrepFindings = semgrepDeploymentId ? await fetchSemgrepFindings(semgrepDeploymentId) : [];
+      const semgrepFindings = isGithub ? await fetchSemgrepFindings() : [];
+      const semgrepConnected = semgrepHealth.status === 'connected' || semgrepFindings.length > 0;
       const analysis = simulateScan({ target: urlTrimmed, mode: scanType, semgrepFindings });
-      analysis.semgrep = semgrepDeploymentId
-        ? { deploymentId: semgrepDeploymentId, findings: semgrepFindings.length }
-        : null;
+      analysis.semgrep = {
+        connected: semgrepConnected,
+        deploymentId: semgrepHealth.deploymentId,
+        findings: semgrepFindings.length,
+        lastSync: isGithub ? new Date().toISOString() : null,
+      };
+      if (analysis.semgrep.lastSync) {
+        setSemgrepHealth((prev) => ({ ...prev, lastSync: analysis.semgrep.lastSync }));
+      }
+      refreshSemgrepHealth();
 
       setScanResults(analysis);
 
@@ -454,6 +536,21 @@ export default function CodeScanner() {
   const repoRoutes = repoSummary?.apiRoutes || [];
   const repoComponents = repoSummary?.components || [];
   const repoFiles = repoSummary?.files || [];
+  const severityChartData = scanResults
+    ? [
+        { name: 'Critical', value: scanResults.summary?.critical || 0, color: '#ef4444' },
+        { name: 'High', value: scanResults.summary?.high || 0, color: '#f97316' },
+        { name: 'Medium', value: scanResults.summary?.medium || 0, color: '#eab308' },
+        { name: 'Low', value: scanResults.summary?.low || 0, color: '#3b82f6' },
+      ].filter((item) => item.value > 0)
+    : [];
+  const semgrepStatus = semgrepHealth.status === 'connected'
+    ? { label: 'Connected', className: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' }
+    : semgrepHealth.status === 'not_configured'
+      ? { label: 'Not Configured', className: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30' }
+      : semgrepHealth.status === 'error'
+        ? { label: 'Degraded', className: 'bg-red-500/10 text-red-300 border-red-500/30' }
+        : { label: 'Checking', className: 'bg-gray-700 text-gray-200 border-gray-600' };
   const timeline = scanResults
     ? [
         { label: 'Queued', time: '00:00', status: 'done' },
@@ -575,17 +672,8 @@ export default function CodeScanner() {
                   onChange={(e) => setTargetUrl(e.target.value)}
                   className="bg-gray-900 border-gray-700 text-white"
                 />
-                <div className="mt-3">
-                  <Input
-                    placeholder="Semgrep deployment id (optional)"
-                    value={semgrepDeploymentId}
-                    onChange={(e) => setSemgrepDeploymentId(e.target.value)}
-                    className="bg-gray-900 border-gray-700 text-white"
-                  />
-                  <div className="text-xs text-gray-500 mt-2">
-                    Pull Semgrep Cloud findings into the scan report when available.
-                  </div>
-                  {semgrepError && <div className="text-xs text-red-400 mt-1">{semgrepError}</div>}
+                <div className="mt-3 text-xs text-gray-500">
+                  Semgrep Cloud findings sync automatically on every code scan.
                 </div>
                 <div className="text-xs text-gray-500 mt-2 space-y-1">
                   <p>• <strong>Website URL</strong>: Infrastructure scan (Nuclei, Nmap, DNS recon)</p>
@@ -628,77 +716,149 @@ export default function CodeScanner() {
                 <CardTitle className="text-white">Scan Summary</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="bg-red-500/10 p-4 rounded-lg border border-red-500">
-                    <div className="text-2xl font-bold text-red-500">
-                      {scanResults.summary?.critical || 0}
+                <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
+                  <div>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="bg-red-500/10 p-4 rounded-lg border border-red-500">
+                        <div className="text-2xl font-bold text-red-500">
+                          {scanResults.summary?.critical || 0}
+                        </div>
+                        <div className="text-sm text-gray-400">Critical</div>
+                      </div>
+                      <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500">
+                        <div className="text-2xl font-bold text-orange-500">
+                          {scanResults.summary?.high || 0}
+                        </div>
+                        <div className="text-sm text-gray-400">High</div>
+                      </div>
+                      <div className="bg-yellow-500/10 p-4 rounded-lg border border-yellow-500">
+                        <div className="text-2xl font-bold text-yellow-500">
+                          {scanResults.summary?.medium || 0}
+                        </div>
+                        <div className="text-sm text-gray-400">Medium</div>
+                      </div>
+                      <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500">
+                        <div className="text-2xl font-bold text-blue-500">
+                          {scanResults.summary?.low || 0}
+                        </div>
+                        <div className="text-sm text-gray-400">Low</div>
+                      </div>
+                      <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+                        <div className="text-2xl font-bold text-white">
+                          {scanResults.summary?.total || 0}
+                        </div>
+                        <div className="text-sm text-gray-400">Total</div>
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-400">Critical</div>
-                  </div>
-                  <div className="bg-orange-500/10 p-4 rounded-lg border border-orange-500">
-                    <div className="text-2xl font-bold text-orange-500">
-                      {scanResults.summary?.high || 0}
+                    <div className="mt-6 grid md:grid-cols-2 gap-4">
+                      <div className="bg-gray-900/60 p-4 rounded-lg border border-gray-700">
+                        <div className="text-xs uppercase text-gray-500 mb-2">Coverage</div>
+                        <div className="flex flex-wrap gap-2">
+                          {(scanResults.coverage || []).map((item) => (
+                            <Badge key={item} variant="outline" className="text-xs border-gray-600 text-gray-300">
+                              {item}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="bg-gray-900/60 p-4 rounded-lg border border-gray-700">
+                        <div className="text-xs uppercase text-gray-500 mb-2">Semgrep Health</div>
+                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs border ${semgrepStatus.className}`}>
+                          {semgrepStatus.label}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">
+                          Deployment: {semgrepHealth.deploymentId || '—'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Last check: {semgrepHealth.lastChecked ? new Date(semgrepHealth.lastChecked).toLocaleTimeString() : '—'}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          Last sync: {semgrepHealth.lastSync ? new Date(semgrepHealth.lastSync).toLocaleTimeString() : '—'}
+                        </div>
+                        {semgrepError && <div className="text-xs text-red-400 mt-2">{semgrepError}</div>}
+                      </div>
                     </div>
-                    <div className="text-sm text-gray-400">High</div>
                   </div>
-                  <div className="bg-yellow-500/10 p-4 rounded-lg border border-yellow-500">
-                    <div className="text-2xl font-bold text-yellow-500">
-                      {scanResults.summary?.medium || 0}
-                    </div>
-                    <div className="text-sm text-gray-400">Medium</div>
-                  </div>
-                  <div className="bg-blue-500/10 p-4 rounded-lg border border-blue-500">
-                    <div className="text-2xl font-bold text-blue-500">
-                      {scanResults.summary?.low || 0}
-                    </div>
-                    <div className="text-sm text-gray-400">Low</div>
-                  </div>
-                  <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-                    <div className="text-2xl font-bold text-white">
-                      {scanResults.summary?.total || 0}
-                    </div>
-                    <div className="text-sm text-gray-400">Total</div>
-                  </div>
-                </div>
-                {scanResults.coverage && (
-                  <div className="mt-6">
-                    <div className="text-sm text-gray-400 mb-2">Coverage</div>
-                    <div className="flex flex-wrap gap-2">
-                      {scanResults.coverage.map((item) => (
-                        <Badge key={item} variant="outline" className="text-xs border-gray-500 text-gray-300">
-                          {item}
-                        </Badge>
+                  <div className="bg-gray-900/60 p-4 rounded-lg border border-gray-700">
+                    <div className="text-sm text-gray-300 mb-3">Severity Distribution</div>
+                    {severityChartData.length > 0 ? (
+                      <div className="h-52">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={severityChartData}
+                              dataKey="value"
+                              nameKey="name"
+                              innerRadius={50}
+                              outerRadius={80}
+                              paddingAngle={3}
+                            >
+                              {severityChartData.map((entry) => (
+                                <Cell key={entry.name} fill={entry.color} />
+                              ))}
+                            </Pie>
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500">No findings to chart.</div>
+                    )}
+                    <div className="mt-4 space-y-2 text-xs text-gray-400">
+                      {severityChartData.map((entry) => (
+                        <div key={entry.name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full" style={{ background: entry.color }} />
+                            <span>{entry.name}</span>
+                          </div>
+                          <span>{entry.value}</span>
+                        </div>
                       ))}
                     </div>
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
 
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid lg:grid-cols-2 xl:grid-cols-4 gap-6">
               <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-white">Scan Timeline</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {timeline.map((item) => (
-                      <div key={item.label} className="flex items-center gap-3">
-                        <div className={`h-2 w-2 rounded-full ${
-                          item.status === 'done' ? 'bg-green-400' :
-                          item.status === 'active' ? 'bg-blue-400' : 'bg-gray-500'
-                        }`} />
-                        <div className="flex-1">
-                          <div className="text-sm text-gray-200">{item.label}</div>
-                          <div className="text-xs text-gray-500">{item.time}</div>
-                        </div>
-                      </div>
-                    ))}
+                  <div className="overflow-x-auto">
+                    <table className="table w-full text-sm text-left text-gray-300">
+                      <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                        <tr>
+                          <th className="py-2 pr-3">Stage</th>
+                          <th className="py-2 pr-3">Time</th>
+                          <th className="py-2 pr-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800">
+                        {timeline.map((item) => (
+                          <tr key={item.label}>
+                            <td className="py-2 pr-3 text-white">{item.label}</td>
+                            <td className="py-2 pr-3 text-gray-400">{item.time}</td>
+                            <td className="py-2 pr-3">
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                item.status === 'done'
+                                  ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30'
+                                  : item.status === 'active'
+                                  ? 'bg-blue-500/10 text-blue-300 border border-blue-500/30'
+                                  : 'bg-gray-700 text-gray-200 border border-gray-600'
+                              }`}>
+                                {item.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800 border-gray-700 lg:col-span-1">
+              <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-white">Risk Heatmap</CardTitle>
                 </CardHeader>
@@ -735,18 +895,20 @@ export default function CodeScanner() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gray-800 border-gray-700 lg:col-span-1">
+              <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
                   <CardTitle className="text-white">Fix Pipeline</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {fixPipeline.map((item) => (
+                    {fixPipeline.map((item, idx) => (
                       <div key={item.step} className="flex items-start gap-3">
-                        <div className={`h-2 w-2 rounded-full mt-2 ${
-                          item.status === 'done' ? 'bg-green-400' :
-                          item.status === 'active' ? 'bg-blue-400' : 'bg-gray-500'
-                        }`} />
+                        <div className={`h-6 w-6 rounded-full flex items-center justify-center text-xs ${
+                          item.status === 'done' ? 'bg-emerald-500/20 text-emerald-200' :
+                          item.status === 'active' ? 'bg-blue-500/20 text-blue-200' : 'bg-gray-700 text-gray-200'
+                        }`}>
+                          {idx + 1}
+                        </div>
                         <div>
                           <div className="text-sm text-gray-200">{item.step}</div>
                           <div className="text-xs text-gray-500">{item.detail}</div>
@@ -754,6 +916,21 @@ export default function CodeScanner() {
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Semgrep Health</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs border ${semgrepStatus.className}`}>
+                    {semgrepStatus.label}
+                  </div>
+                  <div className="mt-3 text-xs text-gray-500">Deployment: {semgrepHealth.deploymentId || '—'}</div>
+                  <div className="text-xs text-gray-500">Latency: {semgrepHealth.latencyMs ? `${semgrepHealth.latencyMs}ms` : '—'}</div>
+                  <div className="text-xs text-gray-500">Last check: {semgrepHealth.lastChecked ? new Date(semgrepHealth.lastChecked).toLocaleTimeString() : '—'}</div>
+                  <div className="text-xs text-gray-500">Last sync: {semgrepHealth.lastSync ? new Date(semgrepHealth.lastSync).toLocaleTimeString() : '—'}</div>
                 </CardContent>
               </Card>
             </div>
@@ -790,10 +967,10 @@ export default function CodeScanner() {
                         <tr>
                           <td className="py-3 pr-4 text-gray-400">Semgrep Cloud</td>
                           <td className="py-3 text-gray-300">
-                            {scanResults.semgrep?.deploymentId ? (
-                              <span>Deployment {scanResults.semgrep.deploymentId}</span>
+                            {semgrepHealth.status === 'connected' ? (
+                              <span>Connected (Deployment {semgrepHealth.deploymentId || 'default'})</span>
                             ) : (
-                              <span>Not configured</span>
+                              <span>{semgrepStatus.label}</span>
                             )}
                           </td>
                         </tr>
@@ -995,6 +1172,41 @@ export default function CodeScanner() {
                                             </div>
                                           )}
                                         </div>
+                                      </div>
+                                      <div className="mt-4">
+                                        {aiSummaries[index] ? (
+                                          <div className="bg-blue-500/5 p-4 rounded-lg border border-blue-500/20">
+                                            <div className="flex items-center justify-between mb-2">
+                                              <p className="text-sm font-medium text-blue-300">AI Summary</p>
+                                              {aiSummaries[index]?.owaspCategory && (
+                                                <Badge variant="outline" className="text-xs border-blue-500 text-blue-300">
+                                                  OWASP: {aiSummaries[index].owaspCategory}
+                                                </Badge>
+                                              )}
+                                            </div>
+                                            <p className="text-sm text-gray-300 whitespace-pre-wrap">{aiSummaries[index].summary}</p>
+                                            {aiSummaries[index]?.references?.length > 0 && (
+                                              <div className="mt-3">
+                                                <div className="text-xs text-gray-400 mb-2">Suggested References</div>
+                                                <div className="space-y-2">
+                                                  {aiSummaries[index].references.map((ref) => (
+                                                    <div key={ref} className="text-xs text-blue-300">{ref}</div>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            disabled={aiSummaryLoading[index]}
+                                            onClick={() => requestAiSummary(index, vuln)}
+                                          >
+                                            <Sparkles className="mr-2 h-4 w-4" />
+                                            {aiSummaryLoading[index] ? 'Analyzing...' : 'Generate AI Summary'}
+                                          </Button>
+                                        )}
                                       </div>
                                       {vuln.affectedCode && (
                                         <div className="bg-gray-900 p-4 rounded-lg border border-gray-700 mt-4">

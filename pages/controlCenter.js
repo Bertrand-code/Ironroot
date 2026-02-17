@@ -46,6 +46,21 @@ const featureCatalog = [
     description: 'Policy mapping and evidence capture for audits.',
   },
   {
+    key: 'socPlaybooks',
+    label: 'SOC Playbooks',
+    description: 'Incident response playbooks, SLAs, and runbooks for SOC workflows.',
+  },
+  {
+    key: 'evidenceVault',
+    label: 'Compliance Evidence Vault',
+    description: 'Centralized evidence collection, retention, and audit tracking.',
+  },
+  {
+    key: 'policyAttestations',
+    label: 'Policy Attestations',
+    description: 'Policy acknowledgements, reminders, and audit-ready attestations.',
+  },
+  {
     key: 'documentVault',
     label: 'Secure Document Vault',
     description: 'Sandbox uploads, control downloads, and retain forensic audit trails.',

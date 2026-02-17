@@ -343,7 +343,7 @@ export default function AdminNotepad() {
             <CardContent className="py-12 text-center">
               <StickyNote className="h-16 w-16 text-gray-600 mx-auto mb-4" />
               <p className="text-gray-400 text-lg mb-2">No notes yet</p>
-              <p className="text-gray-500 text-sm">Click "New Note" to create your first note</p>
+              <p className="text-gray-500 text-sm">Click &quot;New Note&quot; to create your first note</p>
             </CardContent>
           </Card>
         )}

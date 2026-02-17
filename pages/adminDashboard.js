@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ironroot } from '@/lib/ironrootClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -904,9 +905,9 @@ contact@ironroot.com`
                           {event.downloadedAt ? new Date(event.downloadedAt).toLocaleString() : '—'}
                         </td>
                         <td className="py-3 pr-4 text-white">
-                          <a className="underline" href="/documentVault" title={event.watermarkId}>
+                          <Link className="underline" href="/documentVault" title={event.watermarkId}>
                             {event.forensicId || '—'}
-                          </a>
+                          </Link>
                         </td>
                         <td className="py-3 pr-4 text-gray-400">
                           {documentMap[event.documentId] || '—'}

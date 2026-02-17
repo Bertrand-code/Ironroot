@@ -19,6 +19,9 @@ const pageMap = {
   RiskRegister: '/riskRegister',
   ControlCenter: '/controlCenter',
   DocumentVault: '/documentVault',
+  SocPlaybooks: '/socPlaybooks',
+  EvidenceVault: '/evidenceVault',
+  PolicyAttestations: '/policyAttestations',
   Platform: '/platform',
   Careers: '/careers',
 };

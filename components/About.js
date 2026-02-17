@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Briefcase, KeyRound, UserCheck } from 'lucide-react';
@@ -43,7 +44,7 @@ export default function About() {
           <div className="flex flex-col items-center">
             <Briefcase className="h-10 w-10 text-red-500 mb-4"/>
             <h3 className="text-xl font-semibold text-white">Elite Experience</h3>
-            <p className="text-gray-400">Our team consists of operators from the world's most demanding intelligence and military cyber units.</p>
+            <p className="text-gray-400">Our team consists of operators from the world&apos;s most demanding intelligence and military cyber units.</p>
           </div>
            <div className="flex flex-col items-center">
             <KeyRound className="h-10 w-10 text-red-500 mb-4"/>

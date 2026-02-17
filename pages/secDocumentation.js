@@ -32,7 +32,11 @@ export default function SecurityDocumentation() {
                 </h3>
                 <ul className="space-y-2 text-sm text-gray-300">
                   <li>✅ <strong>Row-Level Security (RLS):</strong> All entities have admin-only access for sensitive operations</li>
-                  <li>✅ <strong>Role-Based Access Control:</strong> Only users with <code className="bg-gray-900 px-2 py-1 rounded text-red-400">role === 'admin'</code> or <code className="bg-gray-900 px-2 py-1 rounded text-red-400">role === 'owner'</code> can access admin features</li>
+                  <li>
+                    ✅ <strong>Role-Based Access Control:</strong> Only users with{' '}
+                    <code className="bg-gray-900 px-2 py-1 rounded text-red-400">{'role === \"admin\"'}</code> or{' '}
+                    <code className="bg-gray-900 px-2 py-1 rounded text-red-400">{'role === \"owner\"'}</code> can access admin features
+                  </li>
                   <li>✅ <strong>Email Verification:</strong> All users must verify their email before accessing the platform</li>
                   <li>✅ <strong>Session Management:</strong> Secure JWT tokens with automatic expiration</li>
                   <li>✅ <strong>API Key Rotation:</strong> Rotate API keys every 90 days for security compliance</li>
@@ -51,7 +55,7 @@ export default function SecurityDocumentation() {
                       <li>• Approve/reject trial requests</li>
                       <li>• Update user roles (user ↔ admin)</li>
                       <li>• Access all security dashboards</li>
-                      <li>• Generate reports for any user's scans</li>
+                      <li>• Generate reports for any user&apos;s scans</li>
                       <li>• View activity logs and audit trails</li>
                       <li>• Manage API access requests</li>
                     </ul>
@@ -63,7 +67,7 @@ export default function SecurityDocumentation() {
                       <li>• Directly modify built-in User attributes (id, email, full_name, role) via code</li>
                       <li>• Bypass Row-Level Security (RLS) rules</li>
                       <li>• Delete system activity logs</li>
-                      <li>• Access users' passwords (hashed & secure)</li>
+                      <li>• Access users&apos; passwords (hashed & secure)</li>
                     </ul>
                   </div>
                 </div>
@@ -121,10 +125,10 @@ useEffect(() => {
                     <Lock className="h-5 w-5 text-red-500 mb-2" />
                     <h4 className="font-semibold text-red-400 mb-2">Users Cannot:</h4>
                     <ul className="space-y-1 text-sm text-gray-300">
-                      <li>• View other users' scan history</li>
+                      <li>• View other users&apos; scan history</li>
                       <li>• Access admin dashboard</li>
                       <li>• Invite new users to the platform</li>
-                      <li>• Modify other users' data</li>
+                      <li>• Modify other users&apos; data</li>
                       <li>• View system activity logs</li>
                       <li>• Bypass trial/payment restrictions</li>
                     </ul>

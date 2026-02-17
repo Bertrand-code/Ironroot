@@ -79,7 +79,7 @@ export default function TrialRequest() {
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
               <h3 className="text-2xl font-bold text-white mb-2">Request Submitted!</h3>
               <p className="text-gray-400 mb-6">
-                We'll review your trial request and send you access credentials within 24 hours.
+                We&apos;ll review your trial request and send you access credentials within 24 hours.
               </p>
               <Button onClick={() => setStatus('idle')} className="bg-red-600 hover:bg-red-700">
                 Submit Another Request

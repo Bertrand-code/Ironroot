@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, ShieldCheck, Radar, Zap } from 'lucide-react';
 
@@ -24,9 +25,9 @@ export default function Hero() {
             <a className="btn btn--primary btn--lg" href="#trial">
               Start Free Trial <ArrowRight size={18} />
             </a>
-            <a className="btn btn--ghost btn--lg" href="/codeScanner">
+            <Link className="btn btn--ghost btn--lg" href="/codeScanner">
               View Live Demo
-            </a>
+            </Link>
           </div>
           <div className="stat-grid" style={{ marginTop: '32px' }}>
             <div className="stat">

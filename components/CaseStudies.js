@@ -59,7 +59,7 @@ export default function CaseStudies() {
           className="text-center mb-16"
         >
           <h2 className="text-3xl md:text-4xl font-bold text-white">Real-World Impact</h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">We don't just find vulnerabilities; we help our clients prevent disaster. See how our work translates to tangible security improvements.</p>
+          <p className="mt-4 text-lg text-gray-400 max-w-2xl mx-auto">We don&apos;t just find vulnerabilities; we help our clients prevent disaster. See how our work translates to tangible security improvements.</p>
           <div className="mt-6 w-24 h-1 bg-red-500 mx-auto"></div>
         </motion.div>
 

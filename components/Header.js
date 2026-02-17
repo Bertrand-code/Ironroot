@@ -1,16 +1,14 @@
 import React from 'react';
+import Link from 'next/link';
 import Logo from './Logo';
 import { createPageUrl } from '../utils';
 import { useAuth } from '@/lib/useAuth';
 import { ironroot } from '@/lib/ironrootClient';
 
 const NavItem = ({ children, href }) => (
-  <a
-    href={href}
-    className="nav__link"
-  >
+  <Link href={href} className="nav__link">
     {children}
-  </a>
+  </Link>
 );
 
 export default function Header() {
@@ -52,7 +50,15 @@ export default function Header() {
       links: [
         { name: 'Reports', href: createPageUrl('ReportCenter'), isPage: true },
         { name: 'Defense Ops', href: createPageUrl('DefensiveDashboard'), isPage: true },
+        { name: 'SOC Playbooks', href: createPageUrl('SocPlaybooks'), isPage: true, gated: true },
         { name: 'AI Assistant', href: createPageUrl('AiAssistant'), isPage: true },
+      ],
+    },
+    {
+      label: 'Govern',
+      links: [
+        { name: 'Evidence Vault', href: createPageUrl('EvidenceVault'), isPage: true, gated: true },
+        { name: 'Policy Attestations', href: createPageUrl('PolicyAttestations'), isPage: true, gated: true },
       ],
     },
     {
@@ -68,10 +74,10 @@ export default function Header() {
   return (
     <header className="header">
       <div className="container header__inner">
-        <a href={createPageUrl('Home')} className="brand">
+        <Link href={createPageUrl('Home')} className="brand">
           <Logo className="brand__logo" />
           <span>Ironroot</span>
-        </a>
+        </Link>
         <nav className="nav nav--grouped">
           {navGroups.map((group) => (
             <div key={group.label} className="nav__group">
@@ -104,9 +110,9 @@ export default function Header() {
               Log out
             </button>
           ) : (
-            <a className="btn btn--ghost" href="/login">Log in</a>
+            <Link className="btn btn--ghost" href="/login">Log in</Link>
           )}
-          <a href={`${createPageUrl('Home')}#trial`} className="btn btn--primary">Start Free Trial</a>
+          <Link href={`${createPageUrl('Home')}#trial`} className="btn btn--primary">Start Free Trial</Link>
         </div>
       </div>
     </header>

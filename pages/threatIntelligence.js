@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -342,7 +342,7 @@ SNYK_TOKEN=`;
       runAiIntel(searchQuery.trim());
     }, 600);
     return () => clearTimeout(timer);
-  }, [searchQuery, user, org?.features]);
+  }, [searchQuery, user, org?.features, runAiIntel]);
 
   const filteredIntel = useMemo(() => {
     if (!searchQuery.trim()) return intelLibrary;
@@ -382,7 +382,7 @@ SNYK_TOKEN=`;
 
   const selectedIntel = filteredIntel.find((item) => item.id === selectedId) || filteredIntel[0];
 
-  const runAiIntel = async (overrideQuery) => {
+  const runAiIntel = useCallback(async (overrideQuery) => {
     const rawQuery = typeof overrideQuery === 'string' ? overrideQuery : searchQuery;
     const query = String(rawQuery || '').trim();
     if (!query) return;
@@ -404,7 +404,7 @@ SNYK_TOKEN=`;
     } finally {
       setAiLoading(false);
     }
-  };
+  }, [aiLastQuery, aiLoading, searchQuery]);
 
   return (
     <div className="section">

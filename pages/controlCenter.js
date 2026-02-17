@@ -288,15 +288,22 @@ export default function ControlCenter() {
               </CardHeader>
               <CardContent>
                 <div style={{ overflowX: 'auto' }}>
-                  <table className="table">
-                    <thead>
+                  <table className="table w-full text-sm text-left text-gray-300 table-fixed">
+                    <colgroup>
+                      <col style={{ width: '28%' }} />
+                      <col style={{ width: '32%' }} />
+                      <col style={{ width: '40%' }} />
+                    </colgroup>
+                    <thead className="text-xs uppercase text-gray-500 border-b border-gray-800">
                       <tr>
-                        <th style={{ minWidth: '200px' }}>Policy</th>
-                        <th style={{ minWidth: '260px' }}>Current</th>
-                        <th style={{ minWidth: '340px' }}>Configure</th>
+                        <th className="py-3 pr-4">Policy</th>
+                        <th className="py-3 pr-4">Current</th>
+                        <th className="py-3 pr-4">Configure</th>
                       </tr>
+                    </thead>
+                    <tbody>
                       <tr>
-                        <td>
+                        <td className="py-3 pr-4">
                           <div style={{ display: 'grid', gap: '6px' }}>
                             <span className="field-chip">Forensics Access</span>
                             <span className="card__meta" style={{ whiteSpace: 'normal' }}>
@@ -304,21 +311,19 @@ export default function ControlCenter() {
                             </span>
                           </div>
                         </td>
-                        <td className="card__meta" style={{ whiteSpace: 'normal' }}>
+                        <td className="py-3 pr-4 card__meta" style={{ whiteSpace: 'normal' }}>
                           Admin verification: {forensicsConfig?.allowAdminVerify ? 'Allowed' : 'Owner only'}
                         </td>
-                        <td>
-                          <div className="table__actions">
+                        <td className="py-3 pr-4">
+                          <div className="table__actions" style={{ flexWrap: 'wrap' }}>
                             <Button variant="ghost" onClick={toggleAdminForensics}>
                               {forensicsConfig?.allowAdminVerify ? 'Restrict to Owner' : 'Allow Admin Verification'}
                             </Button>
                           </div>
                         </td>
                       </tr>
-                    </thead>
-                    <tbody>
                       <tr>
-                        <td>
+                        <td className="py-3 pr-4">
                           <div style={{ display: 'grid', gap: '6px' }}>
                             <span className="field-chip">Owner</span>
                             <span className="card__meta" style={{ whiteSpace: 'normal' }}>
@@ -326,11 +331,11 @@ export default function ControlCenter() {
                             </span>
                           </div>
                         </td>
-                        <td className="card__meta" style={{ whiteSpace: 'normal' }}>
+                        <td className="py-3 pr-4 card__meta" style={{ whiteSpace: 'normal' }}>
                           {ownerEmail || orgState?.ownerEmail || user?.email}
                         </td>
-                        <td>
-                          <div className="table__actions" style={{ alignItems: 'center' }}>
+                        <td className="py-3 pr-4">
+                          <div className="table__actions" style={{ flexWrap: 'wrap', gap: '10px' }}>
                             <div style={{ flex: 1, minWidth: '220px' }}>
                               <Input
                                 value={ownerEmail}
@@ -343,7 +348,7 @@ export default function ControlCenter() {
                         </td>
                       </tr>
                       <tr>
-                        <td>
+                        <td className="py-3 pr-4">
                           <div style={{ display: 'grid', gap: '6px' }}>
                             <span className="field-chip">Security</span>
                             <span className="card__meta" style={{ whiteSpace: 'normal' }}>
@@ -351,7 +356,7 @@ export default function ControlCenter() {
                             </span>
                           </div>
                         </td>
-                        <td className="card__meta" style={{ whiteSpace: 'normal' }}>
+                        <td className="py-3 pr-4 card__meta" style={{ whiteSpace: 'normal' }}>
                           Session timeout: {orgState?.security?.sessionTimeoutMins || securityForm.sessionTimeoutMins}m
                           <br />
                           AI requests/min: {orgState?.security?.aiRequestsPerMin || securityForm.aiRequestsPerMin}
@@ -362,7 +367,7 @@ export default function ControlCenter() {
                           <br />
                           Secure view mode: {orgState?.security?.secureViewMode ? 'Enabled' : 'Disabled'}
                         </td>
-                        <td>
+                        <td className="py-3 pr-4">
                           <div
                             style={{
                               display: 'grid',
@@ -433,7 +438,7 @@ export default function ControlCenter() {
                         </td>
                       </tr>
                       <tr>
-                        <td>
+                        <td className="py-3 pr-4">
                           <div style={{ display: 'grid', gap: '6px' }}>
                             <span className="field-chip">Organization</span>
                             <span className="card__meta" style={{ whiteSpace: 'normal' }}>
@@ -441,13 +446,13 @@ export default function ControlCenter() {
                             </span>
                           </div>
                         </td>
-                        <td className="card__meta" style={{ whiteSpace: 'normal' }}>
+                        <td className="py-3 pr-4 card__meta" style={{ whiteSpace: 'normal' }}>
                           {orgState?.name || 'Unknown'}
                           <br />
                           Plan: {orgState?.plan || 'N/A'} · Users: {users.length} · Admins: {adminUsers.length}
                         </td>
-                        <td>
-                          <div className="table__actions">
+                        <td className="py-3 pr-4">
+                          <div className="table__actions" style={{ flexWrap: 'wrap' }}>
                             <Button variant="ghost" onClick={() => (window.location.href = '/documentVault')}>
                               Open Vault
                             </Button>

@@ -70,10 +70,15 @@ const allowRequest = (key) => {
 
 const resolveIntegration = (id) => INTEGRATIONS.find((item) => item.id === id);
 
+const resolveEnvKey = (auth) => {
+  if (!auth?.env) return null;
+  return process.env[auth.env] || (auth.envFallback ? process.env[auth.envFallback] : null);
+};
+
 const buildHeaders = (auth) => {
   if (!auth) return {};
   if (auth.type === 'header') {
-    const key = process.env[auth.env];
+    const key = resolveEnvKey(auth);
     if (!key) return null;
     const value = auth.format ? auth.format.replace('${key}', key) : key;
     return { [auth.header]: value };
@@ -118,7 +123,7 @@ export default async function handler(req, res) {
   const url = new URL(integration.baseUrl.replace(/\/$/, '') + '/' + safePath.replace(/^\//, ''));
 
   if (integration.auth?.type === 'query' && integration.auth.param) {
-    const key = process.env[integration.auth.env];
+    const key = resolveEnvKey(integration.auth);
     if (key) url.searchParams.set(integration.auth.param, key);
   }
 

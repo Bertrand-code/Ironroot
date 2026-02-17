@@ -122,6 +122,12 @@ export default function AdminDashboard() {
     enabled: !!user && !!org?.id,
   });
 
+  const { data: dataSources = [] } = useQuery({
+    queryKey: ['integrationStatus'],
+    queryFn: () => ironroot.integrations.External.status(),
+    enabled: !!user,
+  });
+
   const orgMap = orgs.reduce((acc, orgItem) => {
     acc[orgItem.id] = orgItem.name;
     return acc;
@@ -150,6 +156,10 @@ export default function AdminDashboard() {
   const openRisks = risks.filter((risk) => risk.status === 'open').length;
   const publicAssets = assets.filter((asset) => asset.exposure === 'public').length;
   const pendingAdminRequests = adminRequests.filter((request) => request.status === 'pending').length;
+  const sessionByEmail = sessions.reduce((acc, session) => {
+    if (session?.email) acc[session.email] = session;
+    return acc;
+  }, {});
 
   const timeAgo = (value) => {
     if (!value) return 'just now';
@@ -161,6 +171,17 @@ export default function AdminDashboard() {
     if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
     return `${days}d ago`;
+  };
+
+  const scanTypeLabel = (scanType) => {
+    if (!scanType) return 'Scan';
+    const mapping = {
+      file_upload: 'File Upload',
+      github_repository: 'GitHub Repository',
+      website_infrastructure: 'Website Scan',
+      api_security: 'API Security',
+    };
+    return mapping[scanType] || scanType.replace(/_/g, ' ');
   };
 
   const updateTrialStatus = async (id, status, request) => {
@@ -292,6 +313,17 @@ contact@ironroot.com`
     { label: 'Active Sessions', value: activeSessions.length, meta: 'Logged in now', accent: 'text-blue-300' },
     { label: 'Critical Risks', value: criticalRisks, meta: 'Need attention', accent: 'text-red-300' },
   ];
+  const connectedSources = dataSources.filter((source) => source.enabled).length;
+  const onboardingSteps = [
+    { id: 'owner', label: 'Owner email set', done: !!ownerDisplay },
+    { id: 'policy', label: 'Security policy configured', done: !!org?.security },
+    { id: 'team', label: 'Team invited', done: users.length > 1 },
+    { id: 'integrations', label: 'Threat feeds connected', done: connectedSources > 0 },
+    { id: 'scan', label: 'First scan completed', done: scanHistory.length > 0 },
+    { id: 'watermark', label: 'Forensic watermarking enabled', done: !!org?.features?.forensicWatermarking },
+  ];
+  const onboardingCompleted = onboardingSteps.filter((step) => step.done).length;
+  const onboardingProgress = Math.round((onboardingCompleted / onboardingSteps.length) * 100);
 
   return (
     <div className="min-h-screen bg-gray-900 py-12">
@@ -388,6 +420,65 @@ contact@ironroot.com`
               <div className="card__meta">Mitigation in progress</div>
             </div>
           </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gray-800 border-gray-700 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-white">Onboarding Checklist</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-sm text-gray-400">Complete the steps below to finish your enterprise setup.</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {onboardingCompleted} of {onboardingSteps.length} completed
+                  </p>
+                </div>
+                <div className="text-2xl font-bold text-white">{onboardingProgress}%</div>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mb-4">
+                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${onboardingProgress}%` }} />
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                {onboardingSteps.map((step) => (
+                  <div key={step.id} className="flex items-center justify-between bg-gray-900/60 border border-gray-700 rounded-lg px-3 py-2">
+                    <div className="text-sm text-gray-200">{step.label}</div>
+                    <Badge className={step.done ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-gray-700 text-gray-300 border border-gray-600'}>
+                      {step.done ? 'Complete' : 'Pending'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Integration Health</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {dataSources.slice(0, 6).map((source) => (
+                  <div key={source.id} className="flex items-center justify-between border border-gray-700 rounded-lg px-3 py-2 bg-gray-900/60">
+                    <div>
+                      <div className="text-sm text-white">{source.label}</div>
+                      <div className="text-xs text-gray-500">{source.category}</div>
+                    </div>
+                    <Badge className={source.enabled ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/30' : 'bg-gray-700 text-gray-300 border border-gray-600'}>
+                      {source.enabled ? (source.mode === 'demo' ? 'Demo' : 'Connected') : 'Not Connected'}
+                    </Badge>
+                  </div>
+                ))}
+                {dataSources.length === 0 && (
+                  <p className="text-sm text-gray-500">No integrations configured yet.</p>
+                )}
+              </div>
+              <Button variant="ghost" className="mt-4" onClick={() => (window.location.href = '/threatIntelligence')}>
+                Manage Integrations
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid md:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
@@ -515,7 +606,11 @@ contact@ironroot.com`
                   <tbody className="divide-y divide-gray-800">
                     {orgs.map((orgItem) => (
                       <tr key={orgItem.id}>
-                        <td className="py-3 pr-4 text-white">{orgItem.name}</td>
+                        <td className="py-3 pr-4 text-white">
+                          <a className="text-blue-300 hover:underline" href={`/userManagement?org=${orgItem.id}`}>
+                            {orgItem.name}
+                          </a>
+                        </td>
                         <td className="py-3 pr-4 text-gray-400">{orgItem.industry || '—'}</td>
                         <td className="py-3 pr-4 text-gray-400">{orgItem.size || '—'}</td>
                         <td className="py-3 pr-4">
@@ -542,21 +637,39 @@ contact@ironroot.com`
               <CardTitle className="text-white">Active Sessions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {activeSessions.map((session) => (
-                  <div key={session.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-white">{session.email}</p>
-                        <p className="text-xs text-gray-500">Org: {orgMap[session.orgId] || 'Unassigned'}</p>
-                      </div>
-                      <span className="text-xs text-green-400">Active</span>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">Last seen {timeAgo(session.lastSeen)}</p>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="table w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">User</th>
+                      <th className="py-3 pr-4">Org</th>
+                      <th className="py-3 pr-4">Location</th>
+                      <th className="py-3 pr-4">IP</th>
+                      <th className="py-3 pr-4">Device</th>
+                      <th className="py-3 pr-4">Last Seen</th>
+                      <th className="py-3 pr-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {activeSessions.map((session) => (
+                      <tr key={session.id}>
+                        <td className="py-3 pr-4 text-white">{session.email}</td>
+                        <td className="py-3 pr-4 text-gray-400">{orgMap[session.orgId] || 'Unassigned'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{session.location || 'Local'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{session.ip || '127.0.0.1'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{session.device || 'Browser'}</td>
+                        <td className="py-3 pr-4 text-gray-400">{timeAgo(session.lastSeen)}</td>
+                        <td className="py-3 pr-4">
+                          <Badge className="bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+                            Active
+                          </Badge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
                 {activeSessions.length === 0 && (
-                  <p className="text-sm text-gray-500">No active sessions.</p>
+                  <p className="text-sm text-gray-500 mt-4">No active sessions.</p>
                 )}
               </div>
             </CardContent>
@@ -629,24 +742,50 @@ contact@ironroot.com`
               <CardTitle className="text-white">Current Users</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {users.slice(0, 8).map((userItem) => (
-                  <div key={userItem.id} className="bg-gray-900/60 p-3 rounded-lg border border-gray-700">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <p className="text-sm text-white">{userItem.email}</p>
-                        <p className="text-xs text-gray-500">
-                          Org: {orgMap[userItem.orgId] || 'Unassigned'} • Group: {groupMap[userItem.groupId] || 'None'}
-                        </p>
-                      </div>
-                      <Badge className={userItem.role === 'admin' ? 'bg-red-500' : userItem.role === 'owner' ? 'bg-purple-500' : 'bg-blue-500'}>
-                        {userItem.role}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <table className="table w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">User</th>
+                      <th className="py-3 pr-4">Role</th>
+                      <th className="py-3 pr-4">Org</th>
+                      <th className="py-3 pr-4">Group</th>
+                      <th className="py-3 pr-4">Last Seen</th>
+                      <th className="py-3 pr-4">IP</th>
+                      <th className="py-3 pr-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {users.map((userItem) => {
+                      const session = sessionByEmail[userItem.email];
+                      return (
+                        <tr key={userItem.id}>
+                          <td className="py-3 pr-4 text-white">{userItem.email}</td>
+                          <td className="py-3 pr-4">
+                            <Badge
+                              className={
+                                userItem.role === 'admin'
+                                  ? 'bg-red-500'
+                                  : userItem.role === 'owner'
+                                    ? 'bg-purple-500'
+                                    : 'bg-blue-500'
+                              }
+                            >
+                              {userItem.role}
+                            </Badge>
+                          </td>
+                          <td className="py-3 pr-4 text-gray-400">{orgMap[userItem.orgId] || 'Unassigned'}</td>
+                          <td className="py-3 pr-4 text-gray-400">{groupMap[userItem.groupId] || 'None'}</td>
+                          <td className="py-3 pr-4 text-gray-400">{timeAgo(session?.lastSeen)}</td>
+                          <td className="py-3 pr-4 text-gray-400">{session?.ip || '—'}</td>
+                          <td className="py-3 pr-4 text-gray-400">{userItem.status || 'active'}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
                 {users.length === 0 && (
-                  <p className="text-sm text-gray-500">No users yet.</p>
+                  <p className="text-sm text-gray-500 mt-4">No users yet.</p>
                 )}
               </div>
             </CardContent>
@@ -885,77 +1024,81 @@ contact@ironroot.com`
 
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">Contact Leads</h2>
-            <div className="space-y-4">
-              {leads.map((lead) => (
-                <Card key={lead.id} className="bg-gray-800 border-gray-700">
-                  <CardContent className="pt-6">
-                    <div className="mb-2">
-                      <h3 className="font-bold text-white">{lead.fullName}</h3>
-                      <p className="text-sm text-gray-400">{lead.workEmail}</p>
-                      {lead.companyName && (
-                        <p className="text-sm text-gray-500">{lead.companyName}</p>
-                      )}
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      <p className="text-gray-400">
-                        <span className="font-medium">Service:</span> {lead.service?.replace('_', ' ')}
-                      </p>
-                      {lead.phone && (
-                        <p className="text-gray-400">
-                          <span className="font-medium">Phone:</span> {lead.phone}
-                        </p>
-                      )}
-                      {lead.message && (
-                        <p className="text-gray-400 mt-2">{lead.message}</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="table w-full text-sm text-left text-gray-300">
+                <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                  <tr>
+                    <th className="py-3 pr-4">Name</th>
+                    <th className="py-3 pr-4">Email</th>
+                    <th className="py-3 pr-4">Company</th>
+                    <th className="py-3 pr-4">Service</th>
+                    <th className="py-3 pr-4">Phone</th>
+                    <th className="py-3 pr-4">Message</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {leads.map((lead) => (
+                    <tr key={lead.id}>
+                      <td className="py-3 pr-4 text-white">{lead.fullName || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">
+                        {lead.workEmail ? (
+                          <a className="text-blue-300 hover:underline" href={`mailto:${lead.workEmail}`}>
+                            {lead.workEmail}
+                          </a>
+                        ) : '—'}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-400">{lead.companyName || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{lead.service?.replace('_', ' ') || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{lead.phone || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{lead.message || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {leads.length === 0 && (
+                <p className="text-sm text-gray-500 mt-4">No contact leads yet.</p>
+              )}
             </div>
           </div>
 
           <div>
             <h2 className="text-2xl font-bold text-white mb-4">Security Scan History</h2>
-            <div className="space-y-4">
-              {scanHistory.map((scan) => (
-                <Card key={scan.id} className="bg-gray-800 border-gray-700">
-                  <CardContent className="pt-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="font-bold text-white">{scan.targetName}</h3>
-                        <p className="text-sm text-gray-400">{scan.scannedBy}</p>
-                        <p className="text-xs text-gray-500">{new Date(scan.scanDate || scan.created_date).toLocaleString()}</p>
-                      </div>
-                      <Badge className="bg-gray-700 text-white">
-                        {scan.scanType === 'file_upload' ? 'File' : 'GitHub'}
-                      </Badge>
-                    </div>
-                    <div className="grid grid-cols-5 gap-2 text-center text-xs">
-                      <div className="bg-red-500/10 p-2 rounded border border-red-500/30">
-                        <div className="font-bold text-red-400">{scan.summary?.critical || 0}</div>
-                        <div className="text-gray-500">Critical</div>
-                      </div>
-                      <div className="bg-orange-500/10 p-2 rounded border border-orange-500/30">
-                        <div className="font-bold text-orange-400">{scan.summary?.high || 0}</div>
-                        <div className="text-gray-500">High</div>
-                      </div>
-                      <div className="bg-yellow-500/10 p-2 rounded border border-yellow-500/30">
-                        <div className="font-bold text-yellow-400">{scan.summary?.medium || 0}</div>
-                        <div className="text-gray-500">Medium</div>
-                      </div>
-                      <div className="bg-blue-500/10 p-2 rounded border border-blue-500/30">
-                        <div className="font-bold text-blue-400">{scan.summary?.low || 0}</div>
-                        <div className="text-gray-500">Low</div>
-                      </div>
-                      <div className="bg-gray-700/50 p-2 rounded border border-gray-600">
-                        <div className="font-bold text-white">{scan.summary?.total || 0}</div>
-                        <div className="text-gray-500">Total</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="table w-full text-sm text-left text-gray-300">
+                <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                  <tr>
+                    <th className="py-3 pr-4">Target</th>
+                    <th className="py-3 pr-4">Type</th>
+                    <th className="py-3 pr-4">Requested By</th>
+                    <th className="py-3 pr-4">Date</th>
+                    <th className="py-3 pr-4">Critical</th>
+                    <th className="py-3 pr-4">High</th>
+                    <th className="py-3 pr-4">Medium</th>
+                    <th className="py-3 pr-4">Low</th>
+                    <th className="py-3 pr-4">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-800">
+                  {scanHistory.map((scan) => (
+                    <tr key={scan.id}>
+                      <td className="py-3 pr-4 text-white">{scan.targetName || scan.target || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">{scanTypeLabel(scan.scanType)}</td>
+                      <td className="py-3 pr-4 text-gray-400">{scan.scannedBy || '—'}</td>
+                      <td className="py-3 pr-4 text-gray-400">
+                        {scan.scanDate || scan.created_date ? new Date(scan.scanDate || scan.created_date).toLocaleString() : '—'}
+                      </td>
+                      <td className="py-3 pr-4 text-gray-400">{scan.summary?.critical || 0}</td>
+                      <td className="py-3 pr-4 text-gray-400">{scan.summary?.high || 0}</td>
+                      <td className="py-3 pr-4 text-gray-400">{scan.summary?.medium || 0}</td>
+                      <td className="py-3 pr-4 text-gray-400">{scan.summary?.low || 0}</td>
+                      <td className="py-3 pr-4 text-gray-400">{scan.summary?.total || 0}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {scanHistory.length === 0 && (
+                <p className="text-sm text-gray-500 mt-4">No scans recorded yet.</p>
+              )}
             </div>
           </div>
         </div>

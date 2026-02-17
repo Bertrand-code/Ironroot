@@ -39,6 +39,30 @@ export default function handler(req, res) {
       (item) => item.orgId === orgId && item.watermarkedHash === observedFileHash
     );
     if (!event) {
+      const docMatch = (store.documents || []).find(
+        (doc) => doc.orgId === orgId && doc.docHash === observedFileHash
+      );
+      if (docMatch) {
+        return res.status(200).json({
+          ok: true,
+          result: {
+            matchMethod: 'original',
+            watermarkId: null,
+            documentHash: docMatch.docHash,
+            issuedAt: docMatch.createdAt || docMatch.created_date || null,
+            signatureValid: false,
+            forensicId: null,
+            userEmail: null,
+            downloadedAt: null,
+            userHash: null,
+            observedFileHash,
+            strippedFileHash: null,
+            documentId: docMatch.id,
+            wrapped: 'no',
+            note: 'Original file detected. No per-user forensic watermark found.',
+          },
+        });
+      }
       return res.status(404).json({ ok: false, error: 'No forensic watermark found.' });
     }
 

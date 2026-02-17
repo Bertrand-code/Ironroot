@@ -13,7 +13,9 @@ export default function handler(req, res) {
     if (auth.type === 'basic') {
       liveEnabled = !!(process.env[auth.envId] && process.env[auth.envSecret]);
     } else if (auth.env) {
-      liveEnabled = !!process.env[auth.env];
+      const primary = process.env[auth.env];
+      const fallback = auth.envFallback ? process.env[auth.envFallback] : null;
+      liveEnabled = !!(primary || fallback);
     } else {
       liveEnabled = true;
     }

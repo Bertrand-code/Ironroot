@@ -56,6 +56,32 @@ const intelLibrary = [
     remediation:
       'Disable public RDP, enforce MFA, segment critical systems, and test rapid restore playbooks weekly.',
   },
+  {
+    id: 'log4j',
+    label: 'Log4Shell (Log4j)',
+    threatLevel: 'critical',
+    summary:
+      'Log4Shell is a critical remote code execution vulnerability in Apache Log4j (CVE-2021-44228). It enables attackers to execute arbitrary code via malicious JNDI lookups and has seen wide exploitation.',
+    cves: [
+      { id: 'CVE-2021-44228', cvss: 10.0, focus: 'Remote code execution via JNDI lookup' },
+    ],
+    tactics: ['Initial Access', 'Execution', 'Credential Access', 'Lateral Movement'],
+    iocs: ['jndi:ldap strings in logs', 'Unexpected outbound LDAP/RMI traffic', 'New processes spawned by JVM'],
+    remediation:
+      'Upgrade Log4j to a fixed version, disable JNDI lookups where possible, and restrict outbound LDAP/RMI traffic.',
+  },
+  {
+    id: 'stuxnet',
+    label: 'Stuxnet',
+    threatLevel: 'high',
+    summary:
+      'Stuxnet is a sophisticated cyber-physical campaign targeting industrial control systems, leveraging multiple zero-days and propagation techniques to disrupt physical processes.',
+    cves: [],
+    tactics: ['Initial Access', 'Execution', 'Impact'],
+    iocs: ['Unexpected PLC logic modifications', 'Step7 project anomalies', 'USB propagation artifacts'],
+    remediation:
+      'Segment OT networks, monitor PLC changes, enforce removable media controls, and apply vendor patches.',
+  },
 ];
 
 const cveIndex = [
@@ -98,6 +124,14 @@ const cveIndex = [
     description:
       'Agent tool permission misconfiguration allows data exfiltration through third-party tools.',
     owasp: 'A04:2021 - Insecure Design',
+  },
+  {
+    id: 'CVE-2021-44228',
+    title: 'Log4Shell remote code execution',
+    cvss: 10.0,
+    description:
+      'Apache Log4j JNDI lookup vulnerability enabling remote code execution via crafted log messages.',
+    owasp: 'A03:2021 - Injection',
   },
 ];
 

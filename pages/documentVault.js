@@ -309,11 +309,14 @@ export default function DocumentVaultPage() {
 
       const matchMethod = result?.result?.matchMethod || 'embedded';
       const signatureValid = result?.result?.signatureValid;
-      const message = matchMethod === 'hash'
-        ? 'Watermark verified via hash match.'
-        : signatureValid
-          ? 'Watermark verified.'
-          : 'Watermark found but signature is invalid (possible tampering).';
+      const message =
+        matchMethod === 'original'
+          ? 'Original file detected. No per-user forensic watermark was found.'
+          : matchMethod === 'hash'
+            ? 'Watermark verified via hash match.'
+            : signatureValid
+              ? 'Watermark verified.'
+              : 'Watermark found but signature is invalid (possible tampering).';
 
       setVerifyState({
         status: 'ok',

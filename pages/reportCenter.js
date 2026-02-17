@@ -100,6 +100,14 @@ export default function ReportCenter() {
     return 'F';
   };
 
+  const summaryRows = [
+    { label: 'Total Scans', value: totalScans, trend: totalScans ? 'Active' : 'No data' },
+    { label: 'Total Findings', value: totalVulnerabilities, trend: totalVulnerabilities > 0 ? 'Needs review' : 'Clean' },
+    { label: 'Critical Findings', value: criticalVulns, trend: criticalVulns > 0 ? 'Immediate' : 'Clear' },
+    { label: 'High Findings', value: highVulns, trend: highVulns > 0 ? 'Prioritize' : 'Clear' },
+    { label: 'Security Score', value: `${securityScore} (${getScoreGrade(securityScore)})`, trend: securityScore >= 80 ? 'Strong' : 'Improve' },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-900 py-12">
       <div className="container mx-auto px-6">
@@ -135,6 +143,55 @@ export default function ReportCenter() {
               type="offensive"
             />
           </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gray-800 border-gray-700 lg:col-span-2">
+            <CardHeader>
+              <CardTitle className="text-white">Executive Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="table w-full text-sm text-left text-gray-300">
+                  <thead className="text-xs uppercase text-gray-500 border-b border-gray-700">
+                    <tr>
+                      <th className="py-3 pr-4">Metric</th>
+                      <th className="py-3 pr-4">Value</th>
+                      <th className="py-3 pr-4">Signal</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {summaryRows.map((row) => (
+                      <tr key={row.label}>
+                        <td className="py-3 pr-4 text-white">{row.label}</td>
+                        <td className="py-3 pr-4 text-gray-400">{row.value}</td>
+                        <td className="py-3 pr-4 text-gray-400">{row.trend}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gray-800 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Coverage Mix</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {scanTypeData.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between bg-gray-900/60 border border-gray-700 rounded-lg px-3 py-2">
+                    <span className="text-sm text-white">{item.name}</span>
+                    <span className="text-sm text-gray-400">{item.value}</span>
+                  </div>
+                ))}
+                {scanTypeData.length === 0 && (
+                  <p className="text-sm text-gray-500">No scan coverage data yet.</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Security Score Card */}

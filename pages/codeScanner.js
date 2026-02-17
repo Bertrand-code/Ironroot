@@ -544,7 +544,8 @@ export default function CodeScanner() {
         { name: 'Low', value: scanResults.summary?.low || 0, color: '#3b82f6' },
       ].filter((item) => item.value > 0)
     : [];
-  const semgrepStatus = semgrepHealth.status === 'connected'
+  const semgrepConnected = semgrepHealth.status === 'connected' || scanResults?.semgrep?.connected;
+  const semgrepStatus = semgrepConnected
     ? { label: 'Connected', className: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30' }
     : semgrepHealth.status === 'not_configured'
       ? { label: 'Not Configured', className: 'bg-yellow-500/10 text-yellow-300 border-yellow-500/30' }

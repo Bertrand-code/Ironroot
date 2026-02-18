@@ -334,6 +334,33 @@ SNYK_TOKEN=`;
     setAiError('');
   }, [searchQuery]);
 
+  const runAiIntel = useCallback(
+    async (overrideQuery) => {
+      const rawQuery = typeof overrideQuery === 'string' ? overrideQuery : searchQuery;
+      const query = String(rawQuery || '').trim();
+      if (!query) return;
+      if (aiLoading && query === aiLastQuery) return;
+      setAiLastQuery(query);
+      setAiLoading(true);
+      setAiError('');
+      try {
+        const result = await ironroot.integrations.ThreatIntelAI.query({ query });
+        if (!result) {
+          setAiError('AI enrichment is unavailable. Configure the Gemini API key to enable it.');
+          setAiSummary(null);
+        } else {
+          setAiSummary(result);
+        }
+      } catch (err) {
+        setAiError(err?.message || 'AI enrichment failed.');
+        setAiSummary(null);
+      } finally {
+        setAiLoading(false);
+      }
+    },
+    [aiLastQuery, aiLoading, searchQuery]
+  );
+
   useEffect(() => {
     if (!searchQuery.trim()) return undefined;
     if (!user || user.role === 'guest') return undefined;
@@ -381,30 +408,6 @@ SNYK_TOKEN=`;
   }, [searchQuery]);
 
   const selectedIntel = filteredIntel.find((item) => item.id === selectedId) || filteredIntel[0];
-
-  const runAiIntel = useCallback(async (overrideQuery) => {
-    const rawQuery = typeof overrideQuery === 'string' ? overrideQuery : searchQuery;
-    const query = String(rawQuery || '').trim();
-    if (!query) return;
-    if (aiLoading && query === aiLastQuery) return;
-    setAiLastQuery(query);
-    setAiLoading(true);
-    setAiError('');
-    try {
-      const result = await ironroot.integrations.ThreatIntelAI.query({ query });
-      if (!result) {
-        setAiError('AI enrichment is unavailable. Configure the Gemini API key to enable it.');
-        setAiSummary(null);
-      } else {
-        setAiSummary(result);
-      }
-    } catch (err) {
-      setAiError(err?.message || 'AI enrichment failed.');
-      setAiSummary(null);
-    } finally {
-      setAiLoading(false);
-    }
-  }, [aiLastQuery, aiLoading, searchQuery]);
 
   return (
     <div className="section">

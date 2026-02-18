@@ -78,48 +78,50 @@ ironroot-security-scan:
     - develop
     - merge_requests`;
 
-  const jenkinsfile = `pipeline {
-    agent any
-    
-    environment {
-        IRONROOT_API_KEY = credentials('ironroot-api-key')
-    }
-    
-    stages {
-        stage('Security Scan') {
-            steps {
-                script {
-                    sh '''
-                        curl -X POST https://api.ironroot.com/scan \\
-                          -H "Authorization: Bearer ${IRONROOT_API_KEY}" \\
-                          -H "Content-Type: application/json" \\
-                          -d "{\\"repository\\":\\"${GIT_URL}\\",\\"branch\\":\\"${GIT_BRANCH}\\",\\"scan_type\\":\\"full\\"}" \\
-                          -o ironroot-results.json
-                    '''
-                }
-            }
-        }
-        
-        stage('Publish Results') {
-            steps {
-                archiveArtifacts artifacts: 'ironroot-results.json', fingerprint: true
-                publishHTML([
-                    reportDir: '.',
-                    reportFiles: 'ironroot-results.json',
-                    reportName: 'Ironroot Security Scan'
-                ])
-            }
-        }
-    }
-    
-    post {
-        failure {
-            mail to: 'security@company.com',
-                 subject: "Security Scan Failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",
-                 body: "Check console output at ${env.BUILD_URL}"
-        }
-    }
-}`;
+  const jenkinsfile = [
+    'pipeline {',
+    '    agent any',
+    '',
+    '    environment {',
+    "        IRONROOT_API_KEY = credentials('ironroot-api-key')",
+    '    }',
+    '',
+    '    stages {',
+    "        stage('Security Scan') {",
+    '            steps {',
+    '                script {',
+    "                    sh '''",
+    '                        curl -X POST https://api.ironroot.com/scan \\',
+    '                          -H "Authorization: Bearer ${IRONROOT_API_KEY}" \\',
+    '                          -H "Content-Type: application/json" \\',
+    '                          -d \'{"repository":"${GIT_URL}","branch":"${GIT_BRANCH}","scan_type":"full"}\' \\',
+    '                          -o ironroot-results.json',
+    "                    '''",
+    '                }',
+    '            }',
+    '        }',
+    '',
+    "        stage('Publish Results') {",
+    '            steps {',
+    "                archiveArtifacts artifacts: 'ironroot-results.json', fingerprint: true",
+    '                publishHTML([',
+    "                    reportDir: '.',",
+    "                    reportFiles: 'ironroot-results.json',",
+    "                    reportName: 'Ironroot Security Scan'",
+    '                ])',
+    '            }',
+    '        }',
+    '    }',
+    '',
+    '    post {',
+    '        failure {',
+    "            mail to: 'security@company.com',",
+    '                 subject: "Security Scan Failed: ${env.JOB_NAME} - ${env.BUILD_NUMBER}",',
+    '                 body: "Check console output at ${env.BUILD_URL}"',
+    '        }',
+    '    }',
+    '}',
+  ].join('\n');
 
   const dockerConfig = `# Dockerfile for CI/CD Security Scanning
 FROM alpine:latest
